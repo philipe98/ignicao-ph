@@ -79,6 +79,42 @@
   .empty{color:var(--dim);font-size:14px;padding:30px 0;text-align:center}
   .hidden{display:none}
 
+  /* CALENDÁRIO */
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin:22px 0 6px}
+  .cal-head h2{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:19px}
+  .cal-nav{display:flex;gap:8px}
+  .cal-nav button{background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:8px;
+    width:38px;height:38px;font-size:17px;cursor:pointer}
+  .cal-streak{font-size:12.5px;color:var(--dim);margin-bottom:14px;letter-spacing:.03em}
+  .cal-streak b{color:var(--ember)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+  .cal-wd{font-family:var(--disp);font-weight:700;font-size:11.5px;color:var(--dim);text-align:center;
+    text-transform:uppercase;letter-spacing:.08em;padding:4px 0}
+  .cal-d{background:var(--card);border:1px solid var(--line);border-radius:9px;min-height:74px;padding:6px 5px 5px;
+    cursor:pointer;display:flex;flex-direction:column;gap:3px;position:relative;transition:.12s;min-width:0;overflow:hidden}
+  @media(max-width:420px){.cal-d .tag{font-size:9px;letter-spacing:.02em}.cal-d{min-height:66px;padding:5px 3px 4px}}
+  .cal-d:active{transform:scale(.96)}
+  .cal-d .n{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .cal-d .tag{font-family:var(--disp);font-weight:600;font-size:10.5px;line-height:1.15;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--ember);text-wrap:balance}
+  .cal-d.free{background:transparent;cursor:default}
+  .cal-d.free .tag{color:var(--dim);font-weight:400}
+  .cal-d.out{opacity:.28}
+  .cal-d.today{border-color:var(--ember);box-shadow:0 0 0 1px var(--ember)}
+  .cal-d.done{background:var(--ember-soft);border-color:transparent}
+  .cal-d .ok{position:absolute;bottom:4px;right:6px;font-size:12px;color:var(--ember)}
+  .cal-legend{margin-top:18px;display:flex;flex-direction:column;gap:6px}
+  .cal-legend .lg{font-size:13px;color:var(--muted)}
+  .cal-legend .lg b{color:var(--text);font-family:var(--disp);text-transform:uppercase;letter-spacing:.07em;font-size:12.5px;font-weight:700}
+  /* painel do dia */
+  .day-panel{position:fixed;inset:auto 0 0 0;background:var(--card2);border-top:1px solid var(--line);
+    border-radius:18px 18px 0 0;padding:26px 22px 34px;z-index:60;max-width:640px;margin:0 auto}
+  .day-panel .mode{margin-bottom:4px}
+  .day-panel h3{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:23px;letter-spacing:.03em;margin-bottom:4px}
+  .day-panel .cats{color:var(--muted);font-size:14px;margin-bottom:18px}
+  .day-panel .actions{margin-top:0}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:55}
+
   /* MODO FOCO */
   .focus-overlay{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;
     justify-content:center;padding:8vw;gap:22px}
@@ -105,6 +141,7 @@
 
   <div class="tabs">
     <button class="tab on" id="tabAll">Acervo</button>
+    <button class="tab" id="tabCal">Calendário</button>
     <button class="tab" id="tabDraw">Sorteio</button>
   </div>
 
@@ -119,6 +156,7 @@
   </section>
 
   <section id="list" class="hidden"></section>
+  <section id="cal" class="hidden"></section>
 </div>
 
 <script>
@@ -325,10 +363,24 @@ const DATA=[
 ['pov','Grave pelos olhos do INVESTIDOR: o que um olhar frio veria de mais valioso — e de mais frágil — no seu grupo?']
 ];
 
+// Grade editorial semanal: dia da semana → tema + categorias de ignição
+const PLAN={
+  1:{t:'Operação & decisão',cats:['per','ten']},
+  2:{t:'Produto & tecnologia',cats:['tes','tem']},
+  3:{t:'Autoridade & visão',cats:['ceo','mar']},
+  4:{t:'Vida real & bastidor',cats:['pov','col']},
+  5:{t:'Insight da Semana',cats:['sto','liv','tri']},
+  6:{t:'Livre · stories',cats:[]},
+  0:{t:'Livre · stories',cats:[]}
+};
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
 const K='ignicao-ph-v1';
 let S=JSON.parse(localStorage.getItem(K)||'{"used":[],"fav":[]}');
+S.days=S.days||{};
 const save=()=>localStorage.setItem(K,JSON.stringify(S));
 let filter=null, cur=-1, showUsed=false, view='all';
+let calRef=new Date();
 
 const $=id=>document.getElementById(id);
 const chipsEl=$('chips'), cardEl=$('card'), statsEl=$('stats'), listEl=$('list');
@@ -387,15 +439,73 @@ function setView(v){
   view=v;
   $('tabDraw').classList.toggle('on',v==='draw');
   $('tabAll').classList.toggle('on',v==='all');
+  $('tabCal').classList.toggle('on',v==='cal');
   $('stage').classList.toggle('hidden',v!=='draw');
   listEl.classList.toggle('hidden',v!=='all');
+  $('cal').classList.toggle('hidden',v!=='cal');
   if(v==='all')renderList();
+  if(v==='cal')renderCal();
+}
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function weekScore(){
+  const now=new Date(), dow=now.getDay()||7, mon=new Date(now); mon.setDate(now.getDate()-(dow-1));
+  let done=0;
+  for(let i=0;i<5;i++){const d=new Date(mon); d.setDate(mon.getDate()+i); if(S.days[iso(d)])done++;}
+  return done;
+}
+function renderCal(){
+  const y=calRef.getFullYear(), m=calRef.getMonth();
+  const first=new Date(y,m,1), start=(first.getDay()+6)%7, nd=new Date(y,m+1,0).getDate();
+  const today=iso(new Date());
+  let h=`<div class="cal-head"><h2>${MESES[m]} ${y}</h2>
+    <div class="cal-nav"><button id="calPrev" aria-label="Mês anterior">‹</button><button id="calNext" aria-label="Próximo mês">›</button></div></div>
+    <div class="cal-streak">Esta semana: <b>${weekScore()}/5 gravações</b> · toque no dia para sortear a ignição ou marcar gravado</div>
+    <div class="cal-grid">`;
+  for(const w of ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'])h+=`<div class="cal-wd">${w}</div>`;
+  for(let i=0;i<start;i++)h+=`<div></div>`;
+  for(let d=1;d<=nd;d++){
+    const dt=new Date(y,m,d), k=iso(dt), p=PLAN[dt.getDay()], free=!p.cats.length;
+    h+=`<div class="cal-d ${free?'free':''} ${k===today?'today':''} ${S.days[k]?'done':''}" data-k="${k}" data-dow="${dt.getDay()}">
+      <span class="n">${d}</span><span class="tag">${p.t}</span>${S.days[k]?'<span class="ok">✓</span>':''}</div>`;
+  }
+  h+=`</div><div class="cal-legend">`;
+  for(let i=1;i<=5;i++){const p=PLAN[i];
+    h+=`<div class="lg"><b>${['','Seg','Ter','Qua','Qui','Sex'][i]} — ${p.t}:</b> ${p.cats.map(c=>CATS[c].n).join(' · ')}</div>`;}
+  h+=`</div>`;
+  $('cal').innerHTML=h;
+  $('calPrev').onclick=()=>{calRef=new Date(y,m-1,1);renderCal()};
+  $('calNext').onclick=()=>{calRef=new Date(y,m+1,1);renderCal()};
+  $('cal').querySelectorAll('.cal-d:not(.free)').forEach(el=>el.onclick=()=>dayPanel(el.dataset.k,+el.dataset.dow));
+}
+function dayPanel(k,dow){
+  const p=PLAN[dow], done=!!S.days[k];
+  const [yy,mm,dd]=k.split('-');
+  const scrim=document.createElement('div');scrim.className='scrim';
+  const panel=document.createElement('div');panel.className='day-panel';
+  panel.innerHTML=`<div class="mode">${dd}/${mm}</div><h3>${p.t}</h3>
+    <div class="cats">Ignições do dia: ${p.cats.map(c=>CATS[c].n).join(' · ')}</div>
+    <div class="actions">
+      <button class="act draw" id="dpDraw">🎲 Sortear ignição do dia</button>
+      <button class="act ${done?'toggled':''}" id="dpDone">${done?'✓ Gravado':'Marcar gravado'}</button>
+    </div>`;
+  const close=()=>{scrim.remove();panel.remove()};
+  scrim.onclick=close;
+  document.body.append(scrim,panel);
+  panel.querySelector('#dpDraw').onclick=()=>{
+    const p2=DATA.map((d,i)=>i).filter(i=>p.cats.includes(DATA[i][0])&&!S.used.includes(i));
+    close();setView('draw');
+    if(p2.length){cur=p2[Math.floor(Math.random()*p2.length)];cardEl.innerHTML=cardHTML(cur,false);stats();}
+    else draw();
+    window.scrollTo({top:0});
+  };
+  panel.querySelector('#dpDone').onclick=()=>{S.days[k]=!S.days[k];if(!S.days[k])delete S.days[k];save();close();renderCal();};
 }
 $('btnDraw').onclick=draw;
 $('btnUsed').onclick=()=>{if(cur<0)return;S.used.includes(cur)?S.used=S.used.filter(x=>x!==cur):S.used.push(cur);save();stats();};
 $('btnFav').onclick=()=>{if(cur<0)return;S.fav.includes(cur)?S.fav=S.fav.filter(x=>x!==cur):S.fav.push(cur);save();stats();};
 $('tabDraw').onclick=()=>setView('draw');
 $('tabAll').onclick=()=>setView('all');
+$('tabCal').onclick=()=>setView('cal');
 cardEl.onclick=()=>{if(cur<0)return;
   const o=document.createElement('div');o.className='focus-overlay';
   o.innerHTML=cardHTML(cur,true)+'<button class="focus-close" aria-label="Fechar">✕</button>';
