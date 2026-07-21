@@ -14,11 +14,12 @@
   body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.5;min-height:100vh}
   .wrap{max-width:640px;margin:0 auto;padding:0 18px 90px}
 
-  header{padding:22px 0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .hl{display:flex;align-items:center;gap:12px}
-  .cal-btn{background:var(--card);border:1px solid var(--line);border-radius:10px;width:42px;height:42px;
-    font-size:19px;cursor:pointer;line-height:1;transition:.15s}
-  .cal-btn.on{border-color:var(--ember);box-shadow:0 0 0 1px var(--ember)}
+  header{padding:22px 0 4px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .cal-btn{background:var(--card);border:1px solid var(--line);border-radius:99px;height:42px;padding:0 16px;
+    font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.09em;font-size:13px;
+    color:var(--text);cursor:pointer;display:flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap;flex:0 0 auto}
+  .cal-btn.on{border-color:var(--ember);color:var(--ember);box-shadow:0 0 0 1px var(--ember)}
+  .stats{margin:2px 0 10px}
   .brand{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.2em;font-size:15px}
   .brand em{color:var(--ember);font-style:normal}
   .stats{font-size:12px;color:var(--dim);letter-spacing:.04em;font-variant-numeric:tabular-nums}
@@ -140,12 +141,10 @@
 
 <div class="wrap">
   <header>
-    <div class="hl">
-      <button class="cal-btn" id="btnCal" aria-label="Calendário editorial">📅</button>
-      <div class="brand">Ignição <em>·</em> PH</div>
-    </div>
-    <div class="stats" id="stats"></div>
+    <div class="brand">Ignição <em>·</em> PH</div>
+    <button class="cal-btn" id="btnCal">📅 Calendário</button>
   </header>
+  <div class="stats" id="stats"></div>
 
   <div class="chipwrap">
     <div class="chips" id="chips"></div>
