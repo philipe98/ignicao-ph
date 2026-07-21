@@ -1,0 +1,397 @@
+<title>Ignição · PH</title>
+<style>
+  :root{
+    --bg:#0a0d0f; --card:#11181c; --card2:#161f24; --line:#233037;
+    --ember:#2fc7e8; --ember-soft:rgba(47,199,232,.13);
+    --text:#eef5f7; --muted:#94a6ae; --dim:#5f7178;
+    --disp:'Avenir Next Condensed','Arial Narrow',system-ui,sans-serif;
+    --body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{color-scheme:dark}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.5;min-height:100vh}
+  .wrap{max-width:640px;margin:0 auto;padding:0 18px 90px}
+
+  header{padding:22px 0 14px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .brand{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.2em;font-size:15px}
+  .brand em{color:var(--ember);font-style:normal}
+  .stats{font-size:12px;color:var(--dim);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:6px 0 14px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+    font-size:12.5px;color:var(--muted);border:1px solid var(--line);background:transparent;
+    padding:7px 13px;border-radius:99px;cursor:pointer;transition:.15s}
+  .chip.on{color:var(--bg);background:var(--ember);border-color:var(--ember)}
+
+  /* CARTÃO DE IGNIÇÃO */
+  .stage{margin-top:6px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 26px 24px;
+    min-height:340px;display:flex;flex-direction:column;gap:16px;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--ember),transparent 70%)}
+  .mode{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.16em;font-size:12.5px;color:var(--ember)}
+  .pre{font-size:13.5px;color:var(--dim);font-style:italic}
+  .txt{font-family:var(--disp);font-weight:600;font-size:clamp(25px,6.4vw,34px);line-height:1.14;text-wrap:balance;flex:1}
+  .who{font-size:13.5px;color:var(--muted);letter-spacing:.02em}
+  .who b{color:var(--text);font-weight:600}
+  .hook{border-left:2px solid var(--ember);padding:2px 0 2px 12px;font-size:14.5px;color:var(--muted)}
+  .hook b{color:var(--ember);font-weight:600;letter-spacing:.06em;font-size:12px;text-transform:uppercase;font-family:var(--disp);display:block;margin-bottom:2px}
+  .state{position:absolute;top:16px;right:18px;font-size:12px;color:var(--dim);display:flex;gap:8px}
+  .state span{border:1px solid var(--line);border-radius:99px;padding:2px 9px}
+  .state .fav{color:#e8b04c;border-color:#4a3c22}
+  .state .used{color:var(--muted)}
+
+  .actions{display:flex;gap:10px;margin-top:14px}
+  button.act{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:14px;
+    border-radius:10px;padding:15px 10px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--text);flex:1;transition:.15s}
+  button.act:active{transform:scale(.97)}
+  .draw{background:var(--ember)!important;color:#04161c!important;border-color:var(--ember)!important;flex:1.6!important;font-size:15px!important}
+  .toggled{color:var(--ember)!important;border-color:var(--ember)!important}
+
+  .hint{text-align:center;color:var(--dim);font-size:12px;margin-top:14px;letter-spacing:.03em}
+
+  /* ACERVO */
+  .tabs{display:flex;gap:22px;margin:30px 0 6px;border-bottom:1px solid var(--line)}
+  .tab{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:14px;
+    color:var(--dim);background:none;border:none;padding:10px 2px;cursor:pointer;border-bottom:2px solid transparent}
+  .tab.on{color:var(--text);border-bottom-color:var(--ember)}
+  .group-h{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:14px;
+    color:var(--ember);margin:30px 0 10px;display:flex;align-items:baseline;gap:10px}
+  .group-h small{color:var(--dim);font-size:12px;letter-spacing:.06em;font-family:var(--body);font-weight:400}
+  .rows{display:flex;flex-direction:column;gap:8px}
+  .row{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;cursor:pointer;
+    background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ember);border-radius:10px;transition:.12s}
+  .row:active{transform:scale(.99)}
+  .row .body{flex:1;min-width:0}
+  .row p{font-size:15.5px;color:var(--text);font-weight:500;line-height:1.4}
+  .row .src{font-size:12.5px;color:var(--muted);margin-top:4px;letter-spacing:.02em}
+  .row.u{border-left-color:var(--line)}
+  .row.u p{color:var(--dim);font-weight:400}
+  .row .m{font-size:14px;flex:0 0 auto;padding-top:2px;color:var(--muted)}
+  .row .m .fv{color:#e8c04c}
+  .empty{color:var(--dim);font-size:14px;padding:30px 0;text-align:center}
+  .hidden{display:none}
+
+  /* MODO FOCO */
+  .focus-overlay{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;
+    justify-content:center;padding:8vw;gap:22px}
+  .focus-overlay .txt{font-size:clamp(30px,8vw,52px);flex:0}
+  .focus-close{position:absolute;top:20px;right:22px;background:none;border:1px solid var(--line);color:var(--muted);
+    border-radius:99px;width:38px;height:38px;font-size:16px;cursor:pointer}
+  .rec{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-family:var(--disp);font-weight:600}
+  .dot{width:9px;height:9px;border-radius:50%;background:#d43c3c;animation:blink 1.4s infinite}
+  @keyframes blink{50%{opacity:.15}}
+  @media (prefers-reduced-motion:reduce){.dot{animation:none}}
+  button:focus-visible,.chip:focus-visible,.row:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">Ignição <em>·</em> PH</div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="tabs">
+    <button class="tab on" id="tabAll">Acervo</button>
+    <button class="tab" id="tabDraw">Sorteio</button>
+  </div>
+
+  <section class="stage" id="stage">
+    <div class="card" id="card" role="button" tabindex="0" title="Toque para modo foco"></div>
+    <div class="actions">
+      <button class="act draw" id="btnDraw">🎲 Me provoca</button>
+      <button class="act" id="btnUsed">✓ Gravei</button>
+      <button class="act" id="btnFav">☆</button>
+    </div>
+    <p class="hint">Toque no cartão para o modo foco · marque <b>Gravei</b> para não repetir</p>
+  </section>
+
+  <section id="list" class="hidden"></section>
+</div>
+
+<script>
+const CATS={
+  sto:{n:'Estoicos',pre:'“Tem uma frase de 2.000 anos que resolve um problema de hoje:”'},
+  ceo:{n:'CEOs & líderes',pre:'“Li uma frase que não me sai da cabeça:”'},
+  liv:{n:'Livros',pre:'“Esse livro me pegou numa frase:”'},
+  tri:{n:'Trilhas de raciocínio',pre:'“Deixa eu pensar alto com você:”'},
+  fra:{n:'Complete a frase',pre:'“Vou começar uma frase — e terminar com a minha verdade:”'},
+  tes:{n:'Teses',pre:'“Me jogaram uma tese que me incomodou:”'},
+  tem:{n:'Temas do radar',pre:'“Tem um assunto que o mercado inteiro tá discutindo:”'},
+  per:{n:'Perguntas',pre:'“Me fizeram uma pergunta que me travou:”'},
+  mar:{n:'Marcos & histórias',pre:'“Deixa eu te contar uma história que tem tudo a ver com transporte:”'},
+  col:{n:'Colisões',pre:'“Dois mundos que não se falam — e deviam:”'},
+  ten:{n:'Tensões',pre:'“Tem uma tensão que eu vivo todo dia:”'},
+  pov:{n:'Pontos de vista',pre:'“Hoje eu quero olhar isso por outros olhos:”'}
+};
+// [cat, texto, autor/fonte, gancho]
+const DATA=[
+// PERGUNTAS — decisão & risco
+['per','Qual foi a última decisão que você tomou sozinho e queria ter dividido com alguém?'],
+['per','Que oportunidade você recusou recentemente — e o que a recusa diz sobre sua estratégia?'],
+['per','Qual decisão você tomou contra o consenso do time? Como terminou?'],
+['per','O que você decide por instinto — e o que só decide com número na mesa?'],
+['per','Qual decisão você está adiando agora, e o que o adiamento já está custando?'],
+['per','Se tivesse que cortar um dos seus projetos amanhã, qual critério usaria?'],
+['per','Qual foi o "não" mais caro que você já disse? E o "sim" que saiu mais caro ainda?'],
+['per','Que decisão pequena virou um padrão grande dentro da empresa?'],
+// perguntas — cultura & pessoas
+['per','O que você tolera no time hoje que sabe que não deveria tolerar?'],
+['per','Qual comportamento você demitiria mesmo vindo de quem entrega resultado alto?'],
+['per','O que seu time resolve hoje sem você que há um ano dependia de você?'],
+['per','Que conversa difícil você adiou — e o que aconteceu quando finalmente aconteceu?'],
+['per','O que você aprendeu com alguém que ganha muito menos que você?'],
+['per','Se um funcionário novo assistisse seus últimos 10 vídeos, que cultura ele entenderia?'],
+['per','Qual ritual da empresa você defenderia até o fim — e por que ele existe?'],
+['per','Quem te deu o feedback mais duro da sua carreira — e o que ficou dele?'],
+// perguntas — construção & tecnologia
+['per','Qual automação sua ninguém percebeu que existe — e qual todo mundo percebeu no dia 1?'],
+['per','O que a IA ainda não resolve na sua empresa — e você desconfia que nunca vai resolver?'],
+['per','Qual ferramenta você abandonou depois de investir tempo e dinheiro? O que ela te ensinou?'],
+['per','Se recomeçasse a Unity hoje, com as ferramentas de hoje, o que faria diferente no dia 1?'],
+['per','Qual foi a última coisa que você construiu com as próprias mãos — e que problema ela resolve?'],
+['per','O que os gurus de IA falam que te faz balançar a cabeça?'],
+['per','Que dor da sua operação ainda não virou produto — e por que ainda não?'],
+['per','Se pudesse mexer na operação do seu cliente, o que removeria primeiro?'],
+// perguntas — setor & visão
+['per','O que todo mundo no transporte aceita como "normal" que você acha inaceitável?'],
+['per','Que mudança silenciosa está acontecendo no setor que quase ninguém comenta?'],
+['per','Onde estará o dinheiro da logística daqui a 5 anos que hoje ninguém está olhando?'],
+['per','O que uma indústria deveria perguntar à transportadora antes de contratar — e nunca pergunta?'],
+['per','Qual verdade do setor você só descobriu operando, que consultor nenhum te contaria?'],
+['per','Se você mandasse no setor por um dia, que regra mudaria primeiro?'],
+['per','Que empresa de FORA da logística você estuda — e o que roubaria dela?'],
+['per','O motorista autônomo brasileiro daqui a 10 anos: melhor ou pior do que hoje? Por quê?'],
+// perguntas — trajetória & identidade
+['per','O que o Philipe de 13 anos acharia da sua segunda-feira de hoje?'],
+['per','Qual "cedo demais" da sua vida se provou na hora certa?'],
+['per','O que você fingiu saber no começo — e quando parou de precisar fingir?'],
+['per','Que conselho você recebeu, ignorou — e ainda bem que ignorou?'],
+['per','Qual parte da sua história você ainda tem receio de contar? O que te segura?'],
+['per','O que mudou na sua forma de decidir quando você virou pai?'],
+['per','Que hábito de "gente grande" você adotou cedo — e qual rejeitou de propósito?'],
+['per','Se a sua trajetória fosse um case de negócio, qual seria a tese central?'],
+// perguntas — vida & equilíbrio
+['per','O que você protege na agenda com mais força do que qualquer reunião?'],
+['per','Onde termina o Philipe empresário e começa o Philipe? Existe fronteira?'],
+['per','Que lição do futebol de quarta você aplicou na empresa sem perceber?'],
+['per','O que a Jade já te ensinou sobre gestão — sem saber que ensinou?'],
+['per','Qual pequeno luxo é inegociável na sua semana — e o que ele te devolve?'],
+['per','Do que você abriu mão para crescer — e valeu a pena?'],
+['per','O que te desconecta de verdade? Com que frequência isso acontece?'],
+['per','Qual foi a última vez que você mudou de opinião sobre algo importante?'],
+// perguntas — insight & aprendizado
+['per','Que ideia desta semana você quase deixou passar sem anotar?'],
+['per','O que você leu ou ouviu esta semana de que discordou — e por quê?'],
+['per','Qual erro desta semana já virou processo?'],
+['per','Que pergunta de alguém do time te fez pensar mais do que qualquer livro?'],
+['per','O que você faria diferente se esta semana recomeçasse na segunda?'],
+['per','Qual número desta semana te surpreendeu — para cima ou para baixo?'],
+['per','O que você ensinou esta semana que aprendeu na marra?'],
+['per','Que conversa desta semana merecia ter durado mais?'],
+// TENSÕES
+['ten','Lealdade × velocidade — sócios de longa data são sua força; consenso demora. Quando a lealdade vira lentidão?'],
+['ten','Cultura forte × pensamento diverso — cultura demais vira câmara de eco? Como contratar diferente sem diluir o inegociável?'],
+['ten','Automatizar tudo × relacionamento vende frete — a máquina cuida de quê, e o olho no olho cuida de quê?'],
+['ten','Transparência no conteúdo × concorrente assistindo — onde passa a linha do que você conta?'],
+['ten','Pai presente × founder de 3 frentes — qual dos dois rouba tempo de quem? Resposta honesta, não a bonita.'],
+['ten','Contratar rápido para crescer × errar contratação custa cultura — qual dos dois erros você prefere?'],
+['ten','Meta agressiva inspira × meta agressiva esgota — como calibrar o Cruzeiro sem afundar a tripulação?'],
+['ten','Asset-light × profundidade de vínculo — não ter ativo te fez ágil; o que garante o agregado aqui amanhã?'],
+// TESES
+['tes','Toda transportadora vai virar empresa de tecnologia — ou fornecedor de quem virou.'],
+['tes','Relacionamento é o único diferencial que a IA não copia.'],
+['tes','Empresa pequena não tem problema de gestão; tem problema de dono.'],
+['tes','O WhatsApp é o maior sistema logístico do Brasil.'],
+['tes','Vender mais é a pior solução para uma empresa desorganizada.'],
+['tes','IA não vai substituir o motorista — vai substituir quem gerencia motorista mal.'],
+['tes','Founder que não comunica está terceirizando a narrativa da própria empresa.'],
+['tes','Quem precisa de crachá e escritório bonito para ter cultura, não tem cultura.'],
+// COMPLETE A FRASE
+['fra','O maior risco de crescer rápido não é quebrar a empresa — é...'],
+['fra','Todo mundo diz que gente é o maior ativo, mas na prática...'],
+['fra','Se eu pudesse ensinar UMA coisa a um empresário de 20 anos, seria...'],
+['fra','O que o cliente compra da Unity não é frete, é...'],
+['fra','Meu maior medo como founder não é falir — é...'],
+['fra','A tecnologia mais subestimada da logística é...'],
+['fra','Cultura de verdade aparece no dia em que...'],
+['fra','A diferença entre chefe e líder que ninguém fala é...'],
+// COLISÕES
+['col','Futebol × contratação — o que a escalação da pelada de quarta ensina que o RH esquece?'],
+['col','Vinho × estratégia — o que envelhecer bem ensina sobre construir empresa (e sobre o que não se apressa)?'],
+['col','Relógio × processo — o que uma máquina que leva décadas para ser feita ensina sobre operação?'],
+['col','Igreja × liderança — o que um culto de domingo tem que a reunião de segunda deveria ter?'],
+['col','Paternidade × gestão — em que a Jade, aos 3 anos, é sua melhor professora de liderança?'],
+['col','Copy dos anos 60 × frete de 2026 — o que Schwartz e Ogilvy ensinam sobre vender transporte?'],
+['col','Creator economy × TRC — o que a arena dos creators ensina a uma transportadora B2B?'],
+['col','Asset-light × vida pessoal — o que você decidiu "não possuir" fora da empresa, de propósito?'],
+// TRILHAS
+['tri','Trade-off exposto: escolha uma decisão da semana → reconstrua as opções que descartou → explique por que a descartada perdeu.'],
+['tri','Teste de delegação: pegue algo que só você faz → pergunte por que só você → descreva o que aconteceria se documentasse hoje.'],
+['tri','Causa raiz: pegue uma reclamação recorrente do setor → desmonte a causa raiz → diga o que o setor deveria fazer (e não faz).'],
+['tri','Tribunal do "sempre foi assim": pegue algo que a empresa faz por inércia → investigue a origem → decida em voz alta: mantém ou mata?'],
+['tri','Filtro de hype: pegue a moda do momento → separe o ruído do que fica → diga o que você faria com ela segunda de manhã.'],
+['tri','Número com história: pegue um número da operação (que possa contar) → conte a história por trás → extraia a regra geral.'],
+['tri','Arqueologia de um "não": pegue um não que você levou → o que ele ensinou → que "sim" ele destravou depois.'],
+['tri','Evolução pública: pegue uma crença de 5 anos atrás → confronte com o que sabe hoje → nomeie o que te fez mudar.'],
+// CEOS & LÍDERES
+['ceo','"A cultura come a estratégia no café da manhã."','Peter Drucker','Unity Skills e Cruzeiro existem por isso — mas cultura sem estratégia também morre de fome? Onde uma alimenta a outra?'],
+['ceo','"Sua margem é a minha oportunidade."','Jeff Bezos','Num setor de margem apertada como o TRC, quem está sendo o Bezos de quem? Você ataca a margem de quem?'],
+['ceo','"Mostre-me os incentivos e eu te mostro o resultado."','Charlie Munger','Comissão, prêmio do Cruzeiro, forma de pagar motorista — o que seus incentivos produzem sem você perceber?'],
+['ceo','"Aprenda a construir e aprenda a vender. Quem sabe as duas coisas é imparável."','Naval Ravikant','Você construiu por 15 anos; este projeto de comunicação é a segunda metade da frase.'],
+['ceo','"As pessoas não sabem o que querem até você mostrar a elas."','Steve Jobs','A Knauf não pediu o Track.io — viu um dashboard e perguntou se estava à venda.'],
+['ceo','"Se eu perguntasse às pessoas o que queriam, teriam dito cavalos mais rápidos."','Henry Ford','O motorista nunca pediu um app. A resposta certa foi não dar app nenhum.'],
+['ceo','"Faça coisas que não escalam."','Paul Graham','O Track.io começou como planilha preenchida na mão. Quando o não-escalável é o caminho certo?'],
+['ceo','"Não me diga o que você pensa; me mostre o seu portfólio."','Nassim Taleb','A diferença entre quem opina sobre logística e quem tem CNPJ, folha e frete rodando.'],
+['ceo','"O consumidor não é idiota; é a sua esposa."','David Ogilvy','Respeito pela inteligência do motorista e do cliente — por isso a Vanderleia tem nome de gente.'],
+['ceo','"Sonho grande e sonho pequeno dão o mesmo trabalho."','Jorge Paulo Lemann','Concorda ou discorda? O sonho grande cobra um preço que o pequeno não cobra?'],
+['ceo','"Só os paranoicos sobrevivem."','Andy Grove','O que te deixa paranoico hoje — e o que você faz com essa paranoia?'],
+['ceo','"Leva 20 anos para construir uma reputação e 5 minutos para destruí-la."','Warren Buffett','Documentar em público aumenta o patrimônio e o risco. Como você protege a coerência?'],
+['ceo','"Dor + reflexão = progresso."','Ray Dalio','O balanço mensal existe por isso. Qual dor recente ainda está sem a reflexão?'],
+['ceo','"Primeiro quem, depois o quê."','Jim Collins','Você contrata para o mapa que existe ou para o que ainda vai existir?'],
+['ceo','"Dê uma boa ideia a um time medíocre e eles a estragam; dê uma ideia medíocre a um grande time e eles a consertam."','Ed Catmull (Pixar)','Time > ideia. Onde você já viu isso acontecer na prática?'],
+['ceo','"Seja um aprende-tudo, não um sabe-tudo."','Satya Nadella','Com 15 anos de estrada aos 28, qual é o risco de virar sabe-tudo cedo?'],
+['ceo','"Só existe um chefe: o cliente. Ele pode demitir todo mundo, do dono para baixo."','Sam Walton','Quem manda de verdade no frete — o embarcador, o motorista ou a operação?'],
+['ceo','"Antes de ser líder, sucesso é crescer você mesmo. Depois, sucesso é crescer os outros."','Jack Welch','A virada exata que o Unity Skills tenta provocar nos seus coordenadores.'],
+['ceo','"Treine as pessoas para que possam sair; trate-as tão bem que queiram ficar."','Richard Branson','Formar gente boa é criar concorrente ou criar lealdade? Sua aposta.'],
+['ceo','"Concorrência é para perdedores."','Peter Thiel','Dono de transportadora que constrói tecnologia: um território sem concorrente. Foi sorte ou escolha?'],
+['ceo','"Sempre é o Dia 1. O Dia 2 é estagnação, seguida de morte."','Jeff Bezos','O que na Unity ainda é Dia 1 — e o que já está perigosamente confortável?'],
+// ESTOICOS
+['sto','"Você tem poder sobre sua mente — não sobre os acontecimentos. Perceba isso e encontrará força."','Marco Aurélio','Caminhão parado na BR às 22h: o que está sob seu controle e o que nunca esteve?'],
+['sto','"Não é que tenhamos pouco tempo; é que perdemos muito."','Sêneca','A agenda de um founder de 3 frentes: o que você cortou este ano — e o que ainda finge que cabe?'],
+['sto','"Não são as coisas que perturbam os homens, mas as opiniões que têm sobre elas."','Epicteto','O problema ou a narrativa do problema: qual dos dois costuma travar sua operação?'],
+['sto','"O impedimento à ação avança a ação. O que está no caminho torna-se o caminho."','Marco Aurélio','Motorista sem rastreador e avesso a app era o obstáculo. Virou o produto. Onde mais isso se repete?'],
+['sto','"A sorte é o que acontece quando a preparação encontra a oportunidade."','Sêneca','A planilha já estava pronta quando o diretor perguntou se estava à venda. Que preparação você está fazendo agora, sem saber para quê?'],
+['sto','"Primeiro diga a si mesmo o que você seria; depois faça o que precisa fazer."','Epicteto','Identidade antes de meta: quem a Unity decidiu SER antes de decidir quanto faturar?'],
+['sto','"Se não é certo, não faça; se não é verdade, não diga."','Marco Aurélio','Todo o guardrail de comunicação deste projeto cabe nessa frase de 1.800 anos.'],
+['sto','"Sofremos mais na imaginação do que na realidade."','Sêneca','A conversa difícil que você ensaiou por semanas: o que doeu mais, a espera ou a conversa?'],
+['sto','"O que não é bom para a colmeia não é bom para a abelha."','Marco Aurélio','A decisão boa para uma pessoa e ruim para o time: como você desempata?'],
+['sto','"Nenhum homem é livre se não é senhor de si mesmo."','Epicteto','Futebol de quarta, igreja de domingo, vinho de sábado: disciplina de rituais é prisão ou liberdade?'],
+['sto','"Enquanto adiamos, a vida passa."','Sêneca','A decisão que você está empurrando há meses. Ela ficou mais fácil com o tempo?'],
+['sto','"Não perca tempo discutindo o que é um homem bom. Seja um."','Marco Aurélio','A diferença entre postar sobre liderança e liderar. Como este projeto não vira só discurso?'],
+['sto','"Nenhum vento sopra a favor de quem não sabe para que porto navega."','Sêneca','O Cruzeiro Unity é literalmente isso: o porto desenhado. E o seu porto pessoal, qual é?'],
+['sto','"É impossível aprender aquilo que se acha que já se sabe."','Epicteto','O que você "já sabia" sobre gestão aos 22 que precisou desaprender aos 28?'],
+// LIVROS
+['liv','"Você não sobe ao nível das suas metas; você cai ao nível dos seus sistemas."','Hábitos Atômicos — James Clear','O Cruzeiro é a meta. Qual é o sistema que segura o navio quando a semana desanda?'],
+['liv','"O melhor problema é aquele que ninguém mais está resolvendo."','Zero to One — Peter Thiel','Rastreamento sem app: o problema estava exposto, ninguém pegou. Qual é o próximo à vista de todos?'],
+['liv','"Não existe receita para os momentos realmente difíceis."','The Hard Thing About Hard Things — Ben Horowitz','A decisão que nenhum livro cobriu. Qual foi a sua — e o que você usou no lugar da receita?'],
+['liv','"Se você não priorizar sua vida, outra pessoa vai."','Essencialismo — Greg McKeown','Quem está escrevendo sua agenda: você ou a urgência dos outros?'],
+['liv','"Há coisas que se beneficiam do caos: o vento apaga a vela e alimenta a fogueira."','Antifrágil — Nassim Taleb','Quando o mercado balança, sua empresa é vela ou fogueira? E o que a tornaria fogueira?'],
+['liv','"As pessoas não compram o que você faz; compram por que você faz."','Comece pelo Porquê — Simon Sinek','O cliente compra frete de todo mundo. O que ele compra SÓ da Unity?'],
+['liv','"O bom é inimigo do ótimo."','Good to Great — Jim Collins','Onde a operação está boa o bastante para ninguém mexer — e é exatamente por isso que deveria mexer?'],
+['liv','"Movimento supera meditação."','The Boron Letters — Gary Halbert','A planilha feita na mão veio antes do produto perfeito. O que você está planejando demais e fazendo de menos?'],
+['liv','"A única maneira de vencer a concorrência é parar de tentar vencê-la."','A Estratégia do Oceano Azul','Frete + tecnologia própria não compete com transportadora nem com software house. Que oceano é esse?'],
+['liv','"Autonomia, maestria e propósito movem mais que dinheiro."','Drive — Daniel Pink','Além do salário e do prêmio: o que a Unity paga em autonomia e maestria?'],
+['liv','"Hábitos-chave criam reações em cadeia que mudam tudo ao redor."','O Poder do Hábito — Charles Duhigg','Qual ritual da Unity é o hábito-chave — aquele que, se cair, derruba os outros?'],
+['liv','"A copy não cria desejo — canaliza o desejo que já existe."','Breakthrough Advertising — Eugene Schwartz','Você não convence indústria a querer visibilidade; ela já quer. Seu trabalho é canalizar.'],
+// MARCOS
+['mar','A Blockbuster riu da Netflix e recusou comprá-la por US$50 milhões.','Netflix × Blockbuster','Quem no TRC está rindo agora — e de quê?'],
+['mar','O WhatsApp foi vendido por US$19 bilhões tendo 55 funcionários.','WhatsApp, 2014','Alavancagem extrema de software — e é a infraestrutura invisível da logística brasileira. O que mais está escondido à vista de todos?'],
+['mar','O Nubank nasceu da burocracia dos bancos: a fila e o papel eram a matéria-prima do disruptor.','Nubank × bancos','Qual é o "cartório" do frete esperando alguém ter coragem?'],
+['mar','A Amazon começou vendendo livros — o nicho era o cavalo de troia da infraestrutura.','Amazon, 1994','A Unity começou puxando carga. O que ela está construindo por baixo?'],
+['mar','Na Toyota, qualquer operário podia puxar a corda e parar a linha de produção inteira.','Toyota / andon','Quem pode "puxar a corda" na sua operação? E se ninguém pode, o que isso diz?'],
+['mar','Fred Smith escreveu a tese da entrega overnight na faculdade; o professor deu nota mediana. Ele apostou a empresa nela.','FedEx','Qual tese sua o mercado ainda dá nota mediana?'],
+['mar','A Nike e as marcas creators pararam de comprar atenção e viraram a própria mídia.','A arena dos creators','Por que quase nenhuma empresa B2B pesada entendeu isso ainda?'],
+['mar','iFood, Uber e 99 engoliram a logística urbana em menos de uma década.','Última milha, 2015-2025','Por que o TRC pesado resiste? E por quanto tempo?'],
+// TEMAS
+['tem','Agentes de IA: o mercado ainda fala de chatbot; a fronteira real é agente com função, memória e autonomia.',null,'Seu ângulo: você já opera um escritório deles — pode mostrar, não teorizar.'],
+['tem','Empresas creators: mídia própria chegando ao B2B pesado.',null,'Seu ângulo: você é o experimento vivo dessa tese no TRC.'],
+['tem','Escassez de motoristas: a categoria envelhece e a renovação não vem.',null,'Seu ângulo: o que precisa mudar para o jovem querer a boleia?'],
+['tem','Sucessão nas transportadoras familiares: a maioria do TRC não tem plano.',null,'Seu ângulo: você é a geração que os filhos dos donos queriam ser.'],
+['tem','Geração Z na operação: como liderar quem não aceita o "sempre foi assim".',null,'Seu ângulo: você tem 28 e lidera gente mais velha e mais nova ao mesmo tempo.'],
+['tem','Custo Brasil: o frete paga a conta da ineficiência do país.',null,'Seu ângulo: o que a tecnologia compensa — e o que só política resolve.'],
+['tem','Solidão do dono: o tema que todo empresário sente e pouca gente com lastro fala.',null,'Seu ângulo: você já se descreveu sem perceber, descrevendo seu público.'],
+['tem','Digitalização documental do frete: burocracia virando dado (CT-e, canhoto digital).',null,'Seu ângulo: quem opera sabe onde o papel ainda manda. (Validar detalhe regulatório antes de gravar.)'],
+// PONTOS DE VISTA
+['pov','Grave pelos olhos do MOTORISTA: narre a sua operação por quem dirige. O que ele vê que você não vê?'],
+['pov','Grave pelos olhos do DIRETOR DA INDÚSTRIA: o que ele teme ao contratar uma transportadora nova?'],
+['pov','Grave pelos olhos do PHILIPE DE 2031: o que ele agradece que você decidiu hoje? O que ele lamenta?'],
+['pov','Grave pelos olhos do CONCORRENTE: se você fosse ele, onde atacaria a Unity primeiro?'],
+['pov','Grave pelos olhos da JADE ADULTA: um dia ela vai assistir a esses vídeos. O que você quer que ela entenda do pai?'],
+['pov','Grave pelos olhos de QUEM CHEGOU HOJE: como a Unity parece para o funcionário no primeiro dia?'],
+['pov','Grave pelos olhos do CÉTICO DE IA: defenda o ceticismo melhor que um cético — depois responda a ele.'],
+['pov','Grave pelos olhos do INVESTIDOR: o que um olhar frio veria de mais valioso — e de mais frágil — no seu grupo?']
+];
+
+const K='ignicao-ph-v1';
+let S=JSON.parse(localStorage.getItem(K)||'{"used":[],"fav":[]}');
+const save=()=>localStorage.setItem(K,JSON.stringify(S));
+let filter=null, cur=-1, showUsed=false, view='all';
+
+const $=id=>document.getElementById(id);
+const chipsEl=$('chips'), cardEl=$('card'), statsEl=$('stats'), listEl=$('list');
+
+function pool(){
+  return DATA.map((d,i)=>i).filter(i=>(!filter||DATA[i][0]===filter)&&(showUsed||!S.used.includes(i)));
+}
+function renderChips(){
+  let h=`<button class="chip ${!filter?'on':''}" data-c="">Tudo</button>`;
+  for(const c in CATS){h+=`<button class="chip ${filter===c?'on':''}" data-c="${c}">${CATS[c].n}</button>`}
+  chipsEl.innerHTML=h;
+  chipsEl.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{filter=b.dataset.c||null;renderChips();view==='draw'?draw():renderList();});
+}
+function stats(){
+  statsEl.textContent=`${pool().length} disponíveis · ${S.used.length} gravadas`;
+  $('btnUsed').textContent=S.used.includes(cur)?'↩ Desmarcar':'✓ Gravei';
+  $('btnFav').textContent=S.fav.includes(cur)?'★':'☆';
+  $('btnFav').classList.toggle('toggled',S.fav.includes(cur));
+}
+function cardHTML(i,focus){
+  const [c,t,w,h]=DATA[i];
+  return `${focus?'<div class="rec"><span class="dot"></span>Pensando alto</div>':''}
+    <div class="state">${S.fav.includes(i)?'<span class="fav">★ favorita</span>':''}${S.used.includes(i)?'<span class="used">✓ gravada</span>':''}</div>
+    <div class="mode">${CATS[c].n}</div>
+    <div class="pre">${CATS[c].pre}</div>
+    <div class="txt">${t}</div>
+    ${w?`<div class="who">— <b>${w}</b></div>`:''}
+    ${h?`<div class="hook"><b>Gancho pro seu mundo</b>${h}</div>`:''}`;
+}
+function draw(){
+  const p=pool().filter(i=>i!==cur);
+  if(!p.length){cardEl.innerHTML='<div class="mode">Acervo esgotado</div><div class="txt">Você gravou tudo desta categoria. 🔥<br>Desmarque algumas ou mude o filtro.</div>';cur=-1;stats();return}
+  cur=p[Math.floor(Math.random()*p.length)];
+  cardEl.innerHTML=cardHTML(cur,false);
+  stats();
+}
+function renderList(){
+  let h='';
+  for(const c in CATS){
+    const items=DATA.map((d,i)=>i).filter(i=>DATA[i][0]===c&&(!filter||filter===c));
+    if(!items.length)continue;
+    const done=items.filter(i=>S.used.includes(i)).length;
+    h+=`<div class="group-h">${CATS[c].n}<small>${items.length} ignições${done?` · ${done} gravadas`:''}</small></div><div class="rows">`;
+    for(const i of items){
+      const [,t,w]=DATA[i];
+      h+=`<div class="row ${S.used.includes(i)?'u':''}" data-i="${i}" tabindex="0">
+        <div class="body"><p>${t}</p>${w?`<div class="src">— ${w}</div>`:''}</div>
+        <span class="m">${S.fav.includes(i)?'<span class="fv">★</span>':''}${S.used.includes(i)?' ✓':''}</span></div>`;
+    }
+    h+=`</div>`;
+  }
+  listEl.innerHTML=h||'<div class="empty">Nada aqui.</div>';
+  listEl.querySelectorAll('.row').forEach(r=>r.onclick=()=>{cur=+r.dataset.i;setView('draw');cardEl.innerHTML=cardHTML(cur,false);stats();});
+}
+function setView(v){
+  view=v;
+  $('tabDraw').classList.toggle('on',v==='draw');
+  $('tabAll').classList.toggle('on',v==='all');
+  $('stage').classList.toggle('hidden',v!=='draw');
+  listEl.classList.toggle('hidden',v!=='all');
+  if(v==='all')renderList();
+}
+$('btnDraw').onclick=draw;
+$('btnUsed').onclick=()=>{if(cur<0)return;S.used.includes(cur)?S.used=S.used.filter(x=>x!==cur):S.used.push(cur);save();stats();};
+$('btnFav').onclick=()=>{if(cur<0)return;S.fav.includes(cur)?S.fav=S.fav.filter(x=>x!==cur):S.fav.push(cur);save();stats();};
+$('tabDraw').onclick=()=>setView('draw');
+$('tabAll').onclick=()=>setView('all');
+cardEl.onclick=()=>{if(cur<0)return;
+  const o=document.createElement('div');o.className='focus-overlay';
+  o.innerHTML=cardHTML(cur,true)+'<button class="focus-close" aria-label="Fechar">✕</button>';
+  o.querySelector('.focus-close').onclick=e=>{e.stopPropagation();o.remove()};
+  o.onclick=()=>o.remove();document.body.appendChild(o);};
+cardEl.onkeydown=e=>{if(e.key==='Enter')cardEl.onclick()};
+
+renderChips();draw();setView('all');
+</script>
