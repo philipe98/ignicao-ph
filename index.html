@@ -14,7 +14,11 @@
   body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.5;min-height:100vh}
   .wrap{max-width:640px;margin:0 auto;padding:0 18px 90px}
 
-  header{padding:22px 0 14px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  header{padding:22px 0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .hl{display:flex;align-items:center;gap:12px}
+  .cal-btn{background:var(--card);border:1px solid var(--line);border-radius:10px;width:42px;height:42px;
+    font-size:19px;cursor:pointer;line-height:1;transition:.15s}
+  .cal-btn.on{border-color:var(--ember);box-shadow:0 0 0 1px var(--ember)}
   .brand{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.2em;font-size:15px}
   .brand em{color:var(--ember);font-style:normal}
   .stats{font-size:12px;color:var(--dim);letter-spacing:.04em;font-variant-numeric:tabular-nums}
@@ -136,7 +140,10 @@
 
 <div class="wrap">
   <header>
-    <div class="brand">Ignição <em>·</em> PH</div>
+    <div class="hl">
+      <button class="cal-btn" id="btnCal" aria-label="Calendário editorial">📅</button>
+      <div class="brand">Ignição <em>·</em> PH</div>
+    </div>
     <div class="stats" id="stats"></div>
   </header>
 
@@ -147,7 +154,6 @@
 
   <div class="tabs">
     <button class="tab on" id="tabAll">Acervo</button>
-    <button class="tab" id="tabCal">Calendário</button>
     <button class="tab" id="tabDraw">Sorteio</button>
   </div>
 
@@ -445,7 +451,9 @@ function setView(v){
   view=v;
   $('tabDraw').classList.toggle('on',v==='draw');
   $('tabAll').classList.toggle('on',v==='all');
-  $('tabCal').classList.toggle('on',v==='cal');
+  $('btnCal').classList.toggle('on',v==='cal');
+  document.querySelector('.tabs').classList.toggle('hidden',v==='cal');
+  document.querySelector('.chipwrap').classList.toggle('hidden',v==='cal');
   $('stage').classList.toggle('hidden',v!=='draw');
   listEl.classList.toggle('hidden',v!=='all');
   $('cal').classList.toggle('hidden',v!=='cal');
@@ -518,7 +526,7 @@ $('btnUsed').onclick=()=>{if(cur<0)return;S.used.includes(cur)?S.used=S.used.fil
 $('btnFav').onclick=()=>{if(cur<0)return;S.fav.includes(cur)?S.fav=S.fav.filter(x=>x!==cur):S.fav.push(cur);save();stats();};
 $('tabDraw').onclick=()=>setView('draw');
 $('tabAll').onclick=()=>setView('all');
-$('tabCal').onclick=()=>setView('cal');
+$('btnCal').onclick=()=>setView(view==='cal'?'all':'cal');
 cardEl.onclick=()=>{if(cur<0)return;
   const o=document.createElement('div');o.className='focus-overlay';
   o.innerHTML=cardHTML(cur,true)+'<button class="focus-close" aria-label="Fechar">✕</button>';
