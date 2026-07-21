@@ -17,8 +17,13 @@
   .brand em{color:var(--ember);font-style:normal}
   .stats{font-size:12px;color:var(--dim);letter-spacing:.04em;font-variant-numeric:tabular-nums}
 
-  .chips{display:flex;gap:8px;overflow-x:auto;padding:6px 0 14px;scrollbar-width:none}
+  .chipwrap{position:relative}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:6px 34px 14px 0;scrollbar-width:none;scroll-behavior:smooth}
   .chips::-webkit-scrollbar{display:none}
+  .chip-arrow{position:absolute;right:-2px;top:2px;bottom:10px;width:56px;border:none;cursor:pointer;
+    background:linear-gradient(90deg,transparent,var(--bg) 55%);color:var(--ember);
+    font-size:22px;font-weight:700;text-align:right;padding-right:4px;transition:opacity .2s}
+  .chip-arrow.off{opacity:0;pointer-events:none}
   .chip{flex:0 0 auto;font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.08em;
     font-size:12.5px;color:var(--muted);border:1px solid var(--line);background:transparent;
     padding:7px 13px;border-radius:99px;cursor:pointer;transition:.15s}
@@ -91,7 +96,10 @@
     <div class="stats" id="stats"></div>
   </header>
 
-  <div class="chips" id="chips"></div>
+  <div class="chipwrap">
+    <div class="chips" id="chips"></div>
+    <button class="chip-arrow" id="chipArrow" aria-label="Mais categorias">›</button>
+  </div>
 
   <div class="tabs">
     <button class="tab on" id="tabAll">Acervo</button>
@@ -393,5 +401,10 @@ cardEl.onclick=()=>{if(cur<0)return;
   o.onclick=()=>o.remove();document.body.appendChild(o);};
 cardEl.onkeydown=e=>{if(e.key==='Enter')cardEl.onclick()};
 
-renderChips();draw();setView('all');
+const arrow=$('chipArrow');
+arrow.onclick=()=>chipsEl.scrollBy({left:200});
+const arrowCheck=()=>arrow.classList.toggle('off',chipsEl.scrollLeft>=chipsEl.scrollWidth-chipsEl.clientWidth-8);
+chipsEl.addEventListener('scroll',arrowCheck);
+addEventListener('resize',arrowCheck);
+renderChips();draw();setView('all');arrowCheck();
 </script>
