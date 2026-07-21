@@ -111,7 +111,13 @@
     border-radius:18px 18px 0 0;padding:26px 22px 34px;z-index:60;max-width:640px;margin:0 auto}
   .day-panel .mode{margin-bottom:4px}
   .day-panel h3{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:23px;letter-spacing:.03em;margin-bottom:4px}
-  .day-panel .cats{color:var(--muted);font-size:14px;margin-bottom:18px}
+  .day-panel .cats{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .day-panel .catlist{display:flex;flex-direction:column;gap:9px;margin-bottom:16px}
+  .catbtn{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:15px;
+    text-align:left;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ember);
+    color:var(--text);border-radius:10px;padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+  .catbtn small{color:var(--dim);font-family:var(--body);font-weight:400;letter-spacing:0;text-transform:none;font-size:12.5px}
+  .catbtn:active{transform:scale(.98)}
   .day-panel .actions{margin-top:0}
   .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:55}
 
@@ -483,14 +489,21 @@ function dayPanel(k,dow){
   const scrim=document.createElement('div');scrim.className='scrim';
   const panel=document.createElement('div');panel.className='day-panel';
   panel.innerHTML=`<div class="mode">${dd}/${mm}</div><h3>${p.t}</h3>
-    <div class="cats">Ignições do dia: ${p.cats.map(c=>CATS[c].n).join(' · ')}</div>
+    <div class="cats">Escolha a categoria de ignição do dia:</div>
+    <div class="catlist">${p.cats.map(c=>{
+      const disp=DATA.map((d,i)=>i).filter(i=>DATA[i][0]===c&&!S.used.includes(i)).length;
+      return `<button class="catbtn" data-c="${c}">${CATS[c].n}<small>${disp} disponíveis ›</small></button>`;}).join('')}
+    </div>
     <div class="actions">
-      <button class="act draw" id="dpDraw">🎲 Sortear ignição do dia</button>
+      <button class="act" id="dpDraw">🎲 Sortear do dia</button>
       <button class="act ${done?'toggled':''}" id="dpDone">${done?'✓ Gravado':'Marcar gravado'}</button>
     </div>`;
   const close=()=>{scrim.remove();panel.remove()};
   scrim.onclick=close;
   document.body.append(scrim,panel);
+  panel.querySelectorAll('.catbtn').forEach(b=>b.onclick=()=>{
+    filter=b.dataset.c;renderChips();close();setView('all');window.scrollTo({top:0});
+  });
   panel.querySelector('#dpDraw').onclick=()=>{
     const p2=DATA.map((d,i)=>i).filter(i=>p.cats.includes(DATA[i][0])&&!S.used.includes(i));
     close();setView('draw');
