@@ -159,6 +159,21 @@
   .idea-modal textarea{width:100%;min-height:90px;background:var(--card);border:1px solid var(--line);color:var(--text);
     border-radius:9px;padding:12px;font-size:15px;font-family:var(--body);margin-bottom:10px;resize:vertical}
   .row .by{color:var(--dim);font-size:11.5px;margin-top:3px}
+  /* ASSISTENTE SEMANAL */
+  .wiz{position:fixed;inset:0;background:var(--bg);z-index:70;overflow-y:auto;padding:20px 18px 40px}
+  .wiz-in{max-width:640px;margin:0 auto}
+  .wiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .wiz-top h2{font-family:var(--disp);text-transform:uppercase;font-size:20px;letter-spacing:.06em}
+  .wiz-prog{color:var(--dim);font-size:12.5px;margin-bottom:18px}
+  .wiz-day{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:26px;margin:6px 0 2px}
+  .wiz-q{color:var(--muted);font-size:14px;margin-bottom:12px}
+  .sug{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ember);border-radius:10px;
+    padding:13px 15px;font-size:14.5px;cursor:pointer;margin-bottom:8px;color:var(--text)}
+  .sug small{display:block;color:var(--dim);font-size:11.5px;margin-top:3px}
+  .sug.on{border-color:var(--ember);background:var(--ember-soft)}
+  .wiz-skip{background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:8px 0;text-decoration:underline}
+  .wiz-sum{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:14px}
+  .wiz-sum b{font-family:var(--disp);text-transform:uppercase;font-size:12px;letter-spacing:.06em}
 
   /* MODO FOCO */
   .focus-overlay{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;
@@ -561,7 +576,10 @@ function renderCal(){
   const today=iso(new Date());
   let h=`<div class="cal-head"><h2>${MESES[m]} ${y}</h2>
     <div class="cal-nav"><button id="calPrev" aria-label="Mês anterior">‹</button><button id="calNext" aria-label="Próximo mês">›</button></div></div>
-    <div class="cal-streak">Esta semana: <b>${weekScore()}/5 gravações</b> · reserva: <b>${reserva()} prontos</b> · toque no dia para planejar</div>
+    <div class="cal-streak">Esta semana: <b>${weekScore()}/5 gravações</b> · reserva: <b>${reserva()} prontos</b></div>
+    <div class="actions" style="margin:0 0 16px">
+      <button class="act draw" id="wizBtn">📋 Planejar a semana</button>
+    </div>
     <div class="cal-grid">`;
   for(const w of ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'])h+=`<div class="cal-wd">${w}</div>`;
   for(let i=0;i<start;i++)h+=`<div></div>`;
@@ -582,11 +600,99 @@ function renderCal(){
   $('cal').innerHTML=h;
   $('calPrev').onclick=()=>{calRef=new Date(y,m-1,1);renderCal()};
   $('calNext').onclick=()=>{calRef=new Date(y,m+1,1);renderCal()};
+  $('wizBtn').onclick=planWeek;
   $('cal').querySelectorAll('.cal-d').forEach(el=>el.onclick=()=>dayPanel(el.dataset.k));
+}
+// Sugestões de ignição conectadas ao tema (match por pilar + palavras)
+function sugerir(pilar,tema,n,excl){
+  const cats=PILARES[pilar].cats;
+  const words=(tema||'').toLowerCase().split(/\W+/).filter(w=>w.length>3);
+  const cand=DATA.map((d,i)=>i).filter(i=>cats.includes(DATA[i][0])&&!S.used.includes(i)&&!(excl||[]).includes(i));
+  const scored=cand.map(i=>{
+    const txt=(DATA[i][1]+' '+(DATA[i][3]||'')).toLowerCase();
+    return [i,words.reduce((s,w)=>s+(txt.includes(w)?1:0),0)+Math.random()*.5];
+  }).sort((a,b)=>b[1]-a[1]);
+  return scored.slice(0,n).map(x=>x[0]);
+}
+function planWeek(){
+  const now=new Date(), dow=now.getDay()||7;
+  const mon=new Date(now); mon.setDate(now.getDate()-(dow-1));
+  const nextMon=new Date(mon); nextMon.setDate(mon.getDate()+7);
+  const wiz=document.createElement('div');wiz.className='wiz';
+  document.body.appendChild(wiz);
+  const closeWiz=()=>wiz.remove();
+  const DIAS=['Segunda','Terça','Quarta','Quinta','Sexta'];
+  let base=null, plano=[], step=-1;
+
+  const start=()=>{
+    wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>📋 Planejar a semana</h2>
+      <button class="focus-close" id="wz-x">✕</button></div>
+      <p class="wiz-q">Qual semana vamos montar? Vou te guiar dia a dia: tema → ignição. Rapidinho.</p>
+      <button class="pbtn" style="max-width:none;margin-bottom:10px" id="wz-esta">Esta semana (${String(mon.getDate()).padStart(2,'0')}/${String(mon.getMonth()+1).padStart(2,'0')})</button>
+      <button class="pbtn" style="max-width:none" id="wz-prox">Próxima semana (${String(nextMon.getDate()).padStart(2,'0')}/${String(nextMon.getMonth()+1).padStart(2,'0')})</button></div>`;
+    wiz.querySelector('#wz-x').onclick=closeWiz;
+    wiz.querySelector('#wz-esta').onclick=()=>{base=mon;step=0;dia()};
+    wiz.querySelector('#wz-prox').onclick=()=>{base=nextMon;step=0;dia()};
+  };
+
+  const dia=()=>{
+    if(step>=5)return resumo();
+    const d=new Date(base); d.setDate(base.getDate()+step);
+    const k=iso(d), a=S.days[k]||{};
+    let sel={p:a.p||null,t:a.t||'',ig:a.ig!==undefined?a.ig:null,igt:a.igt||''};
+    let sugs=[], excl=[];
+    const paint=()=>{
+      const temas=sel.p?TEMAS.filter(t=>t[0]===sel.p):[];
+      wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>📋 Semana</h2><button class="focus-close" id="wz-x">✕</button></div>
+        <div class="wiz-prog">Dia ${step+1} de 5</div>
+        <div class="wiz-day" style="${sel.p?`color:${PILARES[sel.p].c}`:''}">${DIAS[step]} · ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</div>
+        <p class="wiz-q">1. Pilar do dia:</p>
+        <div class="pilar-row">${Object.entries(PILARES).map(([key,p])=>
+          `<button class="pilar-b ${sel.p===key?'on':''}" data-p="${key}"
+            style="${sel.p===key?`background:${p.c};border-color:${p.c}`:`color:${p.c};border-color:${p.c}55`}">${p.n}</button>`).join('')}</div>
+        ${sel.p?`<p class="wiz-q">2. Tema:</p>
+          <select class="tema-sel" id="wz-tema"><option value="">— tema do banco —</option>
+            ${temas.map(t=>`<option ${sel.t===t[1]?'selected':''}>${t[1]}</option>`).join('')}
+            ${sel.t&&!temas.some(t=>t[1]===sel.t)?`<option selected>${sel.t}</option>`:''}</select>
+          <input class="tema-sel" id="wz-livre" placeholder="ou tema livre…">
+          <p class="wiz-q">3. Ignição sugerida pra esse tema <button class="wiz-skip" id="wz-mais">🎲 outras</button>:</p>
+          <div id="wz-sugs">${sugs.map(i=>`<div class="sug ${sel.ig===i?'on':''}" data-i="${i}">${DATA[i][1]}${DATA[i][2]?`<small>— ${DATA[i][2]}</small>`:''}</div>`).join('')}</div>
+          <input class="tema-sel" id="wz-iglivre" placeholder="✍️ ou escreva a sua ignição…" value="${sel.igt||''}">`:''}
+        <div class="actions">${sel.p?`<button class="act draw" id="wz-next">${step<4?'Próximo dia →':'Fechar semana →'}</button>`:''}
+          <button class="act" id="wz-pular" style="flex:.5">Pular dia</button></div>
+      </div>`;
+      wiz.querySelector('#wz-x').onclick=closeWiz;
+      wiz.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;sel.ig=null;excl=[];sugs=sugerir(sel.p,sel.t,3,excl);paint()});
+      const ts=wiz.querySelector('#wz-tema'); if(ts)ts.onchange=()=>{sel.t=ts.value;sugs=sugerir(sel.p,sel.t,3,[]);excl=[...sugs];paint()};
+      const lv=wiz.querySelector('#wz-livre'); if(lv)lv.onchange=()=>{if(lv.value.trim()){sel.t=lv.value.trim();sugs=sugerir(sel.p,sel.t,3,[]);excl=[...sugs];paint()}};
+      const ms=wiz.querySelector('#wz-mais'); if(ms)ms.onclick=()=>{sugs=sugerir(sel.p,sel.t,3,excl);excl=excl.concat(sugs);if(sugs.length)paint()};
+      wiz.querySelectorAll('.sug').forEach(s=>s.onclick=()=>{sel.ig=+s.dataset.i;sel.igt='';paint()});
+      const igl=wiz.querySelector('#wz-iglivre'); if(igl)igl.onchange=()=>{if(igl.value.trim()){sel.igt=igl.value.trim();sel.ig=null}};
+      const nx=wiz.querySelector('#wz-next'); if(nx)nx.onclick=()=>{
+        const igl2=wiz.querySelector('#wz-iglivre'); if(igl2&&igl2.value.trim()){sel.igt=igl2.value.trim();}
+        plano[step]={k,p:sel.p,t:sel.t,ig:sel.ig,igt:sel.igt};step++;dia()};
+      const pl=wiz.querySelector('#wz-pular'); if(pl)pl.onclick=()=>{plano[step]=null;step++;dia()};
+    };
+    if(sel.p){sugs=sugerir(sel.p,sel.t,3,[]);excl=[...sugs];}
+    paint();
+  };
+
+  const resumo=()=>{
+    wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>✅ Semana montada</h2><button class="focus-close" id="wz-x">✕</button></div>
+      ${plano.map((p,i)=>p?`<div class="wiz-sum"><b style="color:${PILARES[p.p].c}">${DIAS[i]} · ${PILARES[p.p].n}</b><br>
+        ${p.t||'(sem tema)'}${p.ig!==null&&p.ig!==undefined?`<br><span style="color:var(--muted)">🔥 ${DATA[p.ig][1].slice(0,90)}…</span>`:p.igt?`<br><span style="color:var(--muted)">✍️ ${p.igt}</span>`:''}</div>`:`<div class="wiz-sum" style="color:var(--dim)">${DIAS[i]} · livre</div>`).join('')}
+      <div class="actions"><button class="act draw" id="wz-save">Salvar no calendário</button></div></div>`;
+    wiz.querySelector('#wz-x').onclick=closeWiz;
+    wiz.querySelector('#wz-save').onclick=()=>{
+      plano.forEach(p=>{if(p&&p.p)S.days[p.k]={p:p.p,t:p.t,st:0,ig:p.ig,igt:p.igt}});
+      save();closeWiz();renderCal();
+    };
+  };
+  start();
 }
 function dayPanel(k){
   const a=S.days[k]||{};
-  let sel={p:a.p||null,t:a.t||'',st:a.st!==undefined?a.st:0};
+  let sel={p:a.p||null,t:a.t||'',st:a.st!==undefined?a.st:0,ig:a.ig!==undefined?a.ig:null,igt:a.igt||''};
   const [yy,mm,dd]=k.split('-');
   const scrim=document.createElement('div');scrim.className='scrim';
   const panel=document.createElement('div');panel.className='day-panel';
@@ -605,6 +711,7 @@ function dayPanel(k){
       </select>
       <input class="tema-sel" id="dpLivre" placeholder="ou escreva um tema livre…" value="">
       <div class="st-row">${STATUS.map((s,i)=>`<button class="st-b ${sel.st===i?'on':''}" data-st="${i}">${s}</button>`).join('')}</div>
+      ${sel.ig!==null&&sel.ig!==undefined?`<div class="cats">🔥 Ignição do dia: ${DATA[sel.ig][1].slice(0,110)}</div>`:sel.igt?`<div class="cats">✍️ Ignição: ${sel.igt}</div>`:''}
       <div class="actions">
         <button class="act draw" id="dpIgn">🔥 Ver ignições do pilar</button>
         <button class="act" id="dpSave">Salvar</button>
@@ -622,7 +729,7 @@ function dayPanel(k){
       if(p2.length){cur=p2[Math.floor(Math.random()*p2.length)];cardEl.innerHTML=cardHTML(cur,false);stats();}
       window.scrollTo({top:0});
     };
-    const sv=panel.querySelector('#dpSave'); if(sv)sv.onclick=()=>{S.days[k]={p:sel.p,t:sel.t,st:sel.st};save();close();renderCal()};
+    const sv=panel.querySelector('#dpSave'); if(sv)sv.onclick=()=>{S.days[k]={p:sel.p,t:sel.t,st:sel.st,ig:sel.ig,igt:sel.igt};save();close();renderCal()};
     const cl=panel.querySelector('#dpClear'); if(cl)cl.onclick=()=>{delete S.days[k];save();close();renderCal()};
   };
   const close=()=>{scrim.remove();panel.remove()};
