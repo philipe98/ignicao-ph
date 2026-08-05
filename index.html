@@ -125,6 +125,40 @@
   .catbtn:active{transform:scale(.98)}
   .day-panel .actions{margin-top:0}
   .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:55}
+  /* PERFIS */
+  .user-chip{background:var(--card);border:1px solid var(--line);border-radius:99px;height:30px;padding:0 12px;
+    font-size:12px;color:var(--muted);cursor:pointer;font-weight:600}
+  .profile-overlay{position:fixed;inset:0;background:var(--bg);z-index:80;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;gap:14px;padding:8vw}
+  .profile-overlay h2{font-family:var(--disp);text-transform:uppercase;font-size:24px;letter-spacing:.08em}
+  .profile-overlay p{color:var(--muted);font-size:14px;margin-bottom:10px;text-align:center}
+  .pbtn{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:16px;
+    background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:12px;
+    padding:16px;width:100%;max-width:340px;cursor:pointer}
+  .pbtn:active{transform:scale(.98)}
+  /* PIPELINE / EDITOR DO DIA */
+  .pilar-row{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 12px}
+  .pilar-b{font-family:var(--disp);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;
+    border-radius:99px;padding:7px 11px;cursor:pointer;background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .pilar-b.on{color:#0a0d0f;font-weight:700}
+  .tema-sel{width:100%;background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:9px;
+    padding:11px;font-size:14px;margin-bottom:12px;font-family:var(--body)}
+  .st-row{display:flex;gap:6px;margin-bottom:14px}
+  .st-b{flex:1;font-family:var(--disp);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+    border:1px solid var(--line);background:transparent;color:var(--dim);border-radius:8px;padding:9px 2px;cursor:pointer}
+  .st-b.on{background:var(--ember);border-color:var(--ember);color:#04161c;font-weight:700}
+  .cal-d .pdot{position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%}
+  .cal-d .stb{position:absolute;bottom:4px;right:6px;font-size:10px;font-weight:700}
+  /* IDEIAS */
+  .idea-fab{position:fixed;bottom:22px;right:18px;z-index:40;background:var(--ember);color:#04161c;border:none;
+    border-radius:99px;height:52px;padding:0 20px;font-family:var(--disp);font-weight:700;text-transform:uppercase;
+    letter-spacing:.08em;font-size:14px;cursor:pointer;box-shadow:0 4px 18px rgba(47,199,232,.35)}
+  .idea-modal{position:fixed;inset:auto 0 0 0;background:var(--card2);border-top:1px solid var(--line);z-index:60;
+    border-radius:18px 18px 0 0;padding:24px 22px 34px;max-width:640px;margin:0 auto}
+  .idea-modal h3{font-family:var(--disp);text-transform:uppercase;font-size:19px;margin-bottom:12px}
+  .idea-modal textarea{width:100%;min-height:90px;background:var(--card);border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:12px;font-size:15px;font-family:var(--body);margin-bottom:10px;resize:vertical}
+  .row .by{color:var(--dim);font-size:11.5px;margin-top:3px}
 
   /* MODO FOCO */
   .focus-overlay{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;
@@ -142,7 +176,10 @@
 <div class="wrap">
   <header>
     <div class="brand">Ignição <em>·</em> PH</div>
-    <button class="cal-btn" id="btnCal">📅 Calendário</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="user-chip" id="userChip" title="Trocar perfil">👤</button>
+      <button class="cal-btn" id="btnCal">📅 Calendário</button>
+    </div>
   </header>
   <div class="stats" id="stats"></div>
 
@@ -386,9 +423,48 @@ const PLAN={
 };
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
+// Pilares oficiais (sistema do Fabiano) + conexão com categorias de ignição
+const PILARES={
+  time:{n:'Gestão de Time',c:'#2dd4bf',cats:['per','ten','tri']},
+  pes:{n:'Gestão de Pessoas',c:'#fbbf24',cats:['per','ceo','ten']},
+  uni:{n:'Unity',c:'#60a5fa',cats:['per','tri','mar']},
+  van:{n:'Vanderle.IA',c:'#c084fc',cats:['tes','tem']},
+  aut:{n:'Autoridade & Eventos',c:'#fb7185',cats:['ceo','mar','tes','tem']},
+  vida:{n:'Vida Real',c:'#4ade80',cats:['pov','col']},
+  ins:{n:'Insight da Semana',c:'#facc15',cats:['sto','liv','tri']}
+};
+// Banco de temas (criados pelo Fabiano) por pilar
+const TEMAS=[
+  ['pes','3 perguntas que faço antes de contratar alguém'],
+  ['pes','Como eu dou feedback sem quebrar a relação'],
+  ['uni','Como a Unity resolve um problema que a maioria ainda não resolveu'],
+  ['uni','Um erro que a Unity cometeu e como corrigimos'],
+  ['aut','O que ninguém conta sobre empreender no setor de logística'],
+  ['aut','Uma lição que aprendi com outro empresário'],
+  ['aut','Bastidor de um evento ou conversa relevante sobre o setor'],
+  ['aut','Minha visão sobre pra onde a logística no Brasil está indo'],
+  ['aut','Como penso em crescer sem perder o controle da operação'],
+  ['vida','Como é meu dia a dia'],
+  ['vida','Recapitulação da semana passada — bastidores'],
+  ['vida','Rotina do dia'],
+  ['time','Como decido quando delegar algo em vez de fazer eu mesmo'],
+  ['time','Como o time toca Unity e Vanderle.IA sem perder a qualidade'],
+  ['van','Uma pergunta que recebo toda semana e como respondo'],
+  ['van','Uma decisão sobre a Vanderle.IA que quase não deu certo'],
+  ['ins','2 insights que tive na semana'],
+  ['ins','Insight sobre gestão de pessoas e leitura da semana'],
+  ['ins','2 insights de conteúdo consumido na semana'],
+  ['ins','Insight sobre equilíbrio entre as frentes de negócio']
+];
+const STATUS=['Planejado','Gravado','Editado','Publicado'];
+const USERS=['PH','Rodrigo','Fabiano'];
+
 const K='ignicao-ph-v1';
 let S=JSON.parse(localStorage.getItem(K)||'{"used":[],"fav":[]}');
 S.days=S.days||{};
+for(const k in S.days){if(S.days[k]===true)S.days[k]={st:1}}
+S.ideas=S.ideas||[];
+S.user=S.user||null;
 const save=()=>localStorage.setItem(K,JSON.stringify(S));
 let filter=null, cur=-1, showUsed=false, view='all';
 let calRef=new Date();
@@ -430,6 +506,15 @@ function draw(){
 }
 function renderList(){
   let h='';
+  if(S.ideas.length&&!filter){
+    h+=`<div class="group-h" style="color:#4ade80">💡 Ideias do time<small>${S.ideas.length}</small></div><div class="rows">`;
+    S.ideas.forEach((id,ix)=>{
+      h+=`<div class="row" style="border-left-color:#4ade80" data-idea="${ix}" tabindex="0">
+        <div class="body"><p>${id.txt}</p><div class="by">por ${id.by} · ${id.dt}${id.cat?` · sugerida para ${CATS[id.cat]?CATS[id.cat].n:id.cat}`:''}</div></div>
+        <span class="m">✕</span></div>`;
+    });
+    h+=`</div>`;
+  }
   for(const c in CATS){
     const items=DATA.map((d,i)=>i).filter(i=>DATA[i][0]===c&&(!filter||filter===c));
     if(!items.length)continue;
@@ -444,7 +529,10 @@ function renderList(){
     h+=`</div>`;
   }
   listEl.innerHTML=h||'<div class="empty">Nada aqui.</div>';
-  listEl.querySelectorAll('.row').forEach(r=>r.onclick=()=>{cur=+r.dataset.i;setView('draw');cardEl.innerHTML=cardHTML(cur,false);stats();});
+  listEl.querySelectorAll('.row[data-i]').forEach(r=>r.onclick=()=>{cur=+r.dataset.i;setView('draw');cardEl.innerHTML=cardHTML(cur,false);stats();});
+  listEl.querySelectorAll('.row[data-idea]').forEach(r=>r.onclick=()=>{
+    if(confirm('Remover esta ideia?')){S.ideas.splice(+r.dataset.idea,1);save();renderList();}
+  });
 }
 function setView(v){
   view=v;
@@ -463,62 +551,84 @@ const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${Str
 function weekScore(){
   const now=new Date(), dow=now.getDay()||7, mon=new Date(now); mon.setDate(now.getDate()-(dow-1));
   let done=0;
-  for(let i=0;i<5;i++){const d=new Date(mon); d.setDate(mon.getDate()+i); if(S.days[iso(d)])done++;}
+  for(let i=0;i<5;i++){const d=new Date(mon); d.setDate(mon.getDate()+i); const a=S.days[iso(d)]; if(a&&a.st>=1)done++;}
   return done;
 }
+function reserva(){return Object.values(S.days).filter(a=>a&&a.st===2).length}
 function renderCal(){
   const y=calRef.getFullYear(), m=calRef.getMonth();
   const first=new Date(y,m,1), start=(first.getDay()+6)%7, nd=new Date(y,m+1,0).getDate();
   const today=iso(new Date());
   let h=`<div class="cal-head"><h2>${MESES[m]} ${y}</h2>
     <div class="cal-nav"><button id="calPrev" aria-label="Mês anterior">‹</button><button id="calNext" aria-label="Próximo mês">›</button></div></div>
-    <div class="cal-streak">Esta semana: <b>${weekScore()}/5 gravações</b> · toque no dia para sortear a ignição ou marcar gravado</div>
+    <div class="cal-streak">Esta semana: <b>${weekScore()}/5 gravações</b> · reserva: <b>${reserva()} prontos</b> · toque no dia para planejar</div>
     <div class="cal-grid">`;
   for(const w of ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'])h+=`<div class="cal-wd">${w}</div>`;
   for(let i=0;i<start;i++)h+=`<div></div>`;
   for(let d=1;d<=nd;d++){
-    const dt=new Date(y,m,d), k=iso(dt), p=PLAN[dt.getDay()], free=!p.cats.length;
-    h+=`<div class="cal-d ${free?'free':''} ${k===today?'today':''} ${S.days[k]?'done':''}" data-k="${k}" data-dow="${dt.getDay()}">
-      <span class="n">${d}</span><span class="tag">${p.t}</span>${S.days[k]?'<span class="ok">✓</span>':''}</div>`;
+    const dt=new Date(y,m,d), k=iso(dt), a=S.days[k], dow=dt.getDay(), wk=(dow===0||dow===6);
+    const pil=a&&a.p?PILARES[a.p]:null;
+    const label=a&&a.t?a.t:(pil?pil.n:(wk?'Livre · stories':'—'));
+    const stch=a&&a.st>=0?['◇','●','◆','✓'][a.st]:'';
+    h+=`<div class="cal-d ${wk&&!a?'free':''} ${k===today?'today':''} ${a&&a.st===3?'done':''}" data-k="${k}"
+      ${pil?`style="border-left:3px solid ${pil.c}"`:''}>
+      <span class="n">${d}</span><span class="tag" ${pil?`style="color:${pil.c}"`:''}>${label}</span>
+      ${stch?`<span class="stb" style="color:${pil?pil.c:'var(--muted)'}">${stch}</span>`:''}</div>`;
   }
-  h+=`</div><div class="cal-legend">`;
-  for(let i=1;i<=5;i++){const p=PLAN[i];
-    h+=`<div class="lg"><b>${['','Seg','Ter','Qua','Qui','Sex'][i]} — ${p.t}:</b> ${p.cats.map(c=>CATS[c].n).join(' · ')}</div>`;}
-  h+=`</div>`;
+  h+=`</div><div class="cal-legend">
+    <div class="lg"><b>Pipeline:</b> ◇ planejado · ● gravado · ◆ editado (pronto) · ✓ publicado</div>
+    <div class="lg"><b>Pilares:</b> ${Object.values(PILARES).map(p=>`<span style="color:${p.c}">${p.n}</span>`).join(' · ')}</div>
+  </div>`;
   $('cal').innerHTML=h;
   $('calPrev').onclick=()=>{calRef=new Date(y,m-1,1);renderCal()};
   $('calNext').onclick=()=>{calRef=new Date(y,m+1,1);renderCal()};
-  $('cal').querySelectorAll('.cal-d:not(.free)').forEach(el=>el.onclick=()=>dayPanel(el.dataset.k,+el.dataset.dow));
+  $('cal').querySelectorAll('.cal-d').forEach(el=>el.onclick=()=>dayPanel(el.dataset.k));
 }
-function dayPanel(k,dow){
-  const p=PLAN[dow], done=!!S.days[k];
+function dayPanel(k){
+  const a=S.days[k]||{};
+  let sel={p:a.p||null,t:a.t||'',st:a.st!==undefined?a.st:0};
   const [yy,mm,dd]=k.split('-');
   const scrim=document.createElement('div');scrim.className='scrim';
   const panel=document.createElement('div');panel.className='day-panel';
-  panel.innerHTML=`<div class="mode">${dd}/${mm}</div><h3>${p.t}</h3>
-    <div class="cats">Escolha a categoria de ignição do dia:</div>
-    <div class="catlist">${p.cats.map(c=>{
-      const disp=DATA.map((d,i)=>i).filter(i=>DATA[i][0]===c&&!S.used.includes(i)).length;
-      return `<button class="catbtn" data-c="${c}">${CATS[c].n}<small>${disp} disponíveis ›</small></button>`;}).join('')}
-    </div>
-    <div class="actions">
-      <button class="act" id="dpDraw">🎲 Sortear do dia</button>
-      <button class="act ${done?'toggled':''}" id="dpDone">${done?'✓ Gravado':'Marcar gravado'}</button>
-    </div>`;
+  const render=()=>{
+    const pil=sel.p?PILARES[sel.p]:null;
+    const temas=sel.p?TEMAS.filter(t=>t[0]===sel.p):[];
+    panel.innerHTML=`<div class="mode">${dd}/${mm} · planejamento</div>
+      <div class="pilar-row">${Object.entries(PILARES).map(([key,p])=>
+        `<button class="pilar-b ${sel.p===key?'on':''}" data-p="${key}"
+          style="${sel.p===key?`background:${p.c};border-color:${p.c}`:`color:${p.c};border-color:${p.c}55`}">${p.n}</button>`).join('')}
+      </div>
+      ${sel.p?`<select class="tema-sel" id="dpTema">
+        <option value="">— escolher tema do banco (${PILARES[sel.p].n}) —</option>
+        ${temas.map(t=>`<option ${sel.t===t[1]?'selected':''}>${t[1]}</option>`).join('')}
+        ${sel.t&&!temas.some(t=>t[1]===sel.t)?`<option selected>${sel.t}</option>`:''}
+      </select>
+      <input class="tema-sel" id="dpLivre" placeholder="ou escreva um tema livre…" value="">
+      <div class="st-row">${STATUS.map((s,i)=>`<button class="st-b ${sel.st===i?'on':''}" data-st="${i}">${s}</button>`).join('')}</div>
+      <div class="actions">
+        <button class="act draw" id="dpIgn">🔥 Ver ignições do pilar</button>
+        <button class="act" id="dpSave">Salvar</button>
+        <button class="act" id="dpClear" style="flex:.6">🗑</button>
+      </div>`:`<div class="cats">Escolha o pilar do dia para planejar.</div>`}`;
+    panel.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;render()});
+    const tsel=panel.querySelector('#dpTema'); if(tsel)tsel.onchange=()=>{sel.t=tsel.value};
+    const liv=panel.querySelector('#dpLivre'); if(liv)liv.onchange=()=>{if(liv.value.trim())sel.t=liv.value.trim()};
+    panel.querySelectorAll('.st-b').forEach(b=>b.onclick=()=>{sel.st=+b.dataset.st;render()});
+    const ign=panel.querySelector('#dpIgn'); if(ign)ign.onclick=()=>{
+      const cats=PILARES[sel.p].cats;
+      const p2=DATA.map((d,i)=>i).filter(i=>cats.includes(DATA[i][0])&&!S.used.includes(i));
+      S.days[k]={p:sel.p,t:sel.t,st:sel.st};save();
+      close();setView('draw');
+      if(p2.length){cur=p2[Math.floor(Math.random()*p2.length)];cardEl.innerHTML=cardHTML(cur,false);stats();}
+      window.scrollTo({top:0});
+    };
+    const sv=panel.querySelector('#dpSave'); if(sv)sv.onclick=()=>{S.days[k]={p:sel.p,t:sel.t,st:sel.st};save();close();renderCal()};
+    const cl=panel.querySelector('#dpClear'); if(cl)cl.onclick=()=>{delete S.days[k];save();close();renderCal()};
+  };
   const close=()=>{scrim.remove();panel.remove()};
   scrim.onclick=close;
   document.body.append(scrim,panel);
-  panel.querySelectorAll('.catbtn').forEach(b=>b.onclick=()=>{
-    filter=b.dataset.c;renderChips();close();setView('all');window.scrollTo({top:0});
-  });
-  panel.querySelector('#dpDraw').onclick=()=>{
-    const p2=DATA.map((d,i)=>i).filter(i=>p.cats.includes(DATA[i][0])&&!S.used.includes(i));
-    close();setView('draw');
-    if(p2.length){cur=p2[Math.floor(Math.random()*p2.length)];cardEl.innerHTML=cardHTML(cur,false);stats();}
-    else draw();
-    window.scrollTo({top:0});
-  };
-  panel.querySelector('#dpDone').onclick=()=>{S.days[k]=!S.days[k];if(!S.days[k])delete S.days[k];save();close();renderCal();};
+  render();
 }
 $('btnDraw').onclick=draw;
 $('btnUsed').onclick=()=>{if(cur<0)return;S.used.includes(cur)?S.used=S.used.filter(x=>x!==cur):S.used.push(cur);save();stats();};
@@ -533,10 +643,44 @@ cardEl.onclick=()=>{if(cur<0)return;
   o.onclick=()=>o.remove();document.body.appendChild(o);};
 cardEl.onkeydown=e=>{if(e.key==='Enter')cardEl.onclick()};
 
+// Perfis
+function pickUser(force){
+  if(S.user&&!force){$('userChip').textContent='👤 '+S.user;return}
+  const o=document.createElement('div');o.className='profile-overlay';
+  o.innerHTML=`<h2>Quem está aí?</h2><p>Escolha seu perfil — tudo que você criar fica assinado por você.</p>
+    ${USERS.map(u=>`<button class="pbtn" data-u="${u}">${u}</button>`).join('')}`;
+  o.querySelectorAll('.pbtn').forEach(b=>b.onclick=()=>{S.user=b.dataset.u;save();$('userChip').textContent='👤 '+S.user;o.remove()});
+  document.body.appendChild(o);
+}
+$('userChip').onclick=()=>pickUser(true);
+
+// Ideias do time
+const fab=document.createElement('button');fab.className='idea-fab';fab.textContent='+ Ideia';
+fab.onclick=()=>{
+  const scrim=document.createElement('div');scrim.className='scrim';
+  const md=document.createElement('div');md.className='idea-modal';
+  md.innerHTML=`<h3>💡 Nova ideia de ignição</h3>
+    <textarea id="ideaTxt" placeholder="Escreva a ideia: uma pergunta, tese, tema, citação…"></textarea>
+    <select class="tema-sel" id="ideaCat"><option value="">categoria sugerida (opcional)</option>
+      ${Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.n}</option>`).join('')}</select>
+    <div class="actions"><button class="act draw" id="ideaSave">Adicionar ao acervo</button></div>`;
+  const close=()=>{scrim.remove();md.remove()};
+  scrim.onclick=close;
+  document.body.append(scrim,md);
+  md.querySelector('#ideaSave').onclick=()=>{
+    const txt=md.querySelector('#ideaTxt').value.trim();
+    if(!txt)return;
+    const d=new Date();
+    S.ideas.unshift({txt,cat:md.querySelector('#ideaCat').value||null,by:S.user||'?',dt:`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`});
+    save();close();setView('all');
+  };
+};
+document.body.appendChild(fab);
+
 const arrow=$('chipArrow');
 arrow.onclick=()=>chipsEl.scrollBy({left:200});
 const arrowCheck=()=>arrow.classList.toggle('off',chipsEl.scrollLeft>=chipsEl.scrollWidth-chipsEl.clientWidth-8);
 chipsEl.addEventListener('scroll',arrowCheck);
 addEventListener('resize',arrowCheck);
-renderChips();draw();setView('all');arrowCheck();
+renderChips();draw();setView('all');arrowCheck();pickUser(false);
 </script>
