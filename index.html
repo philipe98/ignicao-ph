@@ -448,28 +448,114 @@ const PILARES={
   vida:{n:'Vida Real',c:'#4ade80',cats:['pov','col']},
   ins:{n:'Insight da Semana',c:'#facc15',cats:['sto','liv','tri']}
 };
-// Banco de temas (criados pelo Fabiano) por pilar
-const TEMAS=[
-  ['pes','3 perguntas que faço antes de contratar alguém'],
-  ['pes','Como eu dou feedback sem quebrar a relação'],
-  ['uni','Como a Unity resolve um problema que a maioria ainda não resolveu'],
-  ['uni','Um erro que a Unity cometeu e como corrigimos'],
-  ['aut','O que ninguém conta sobre empreender no setor de logística'],
-  ['aut','Uma lição que aprendi com outro empresário'],
-  ['aut','Bastidor de um evento ou conversa relevante sobre o setor'],
-  ['aut','Minha visão sobre pra onde a logística no Brasil está indo'],
-  ['aut','Como penso em crescer sem perder o controle da operação'],
-  ['vida','Como é meu dia a dia'],
-  ['vida','Recapitulação da semana passada — bastidores'],
-  ['vida','Rotina do dia'],
-  ['time','Como decido quando delegar algo em vez de fazer eu mesmo'],
-  ['time','Como o time toca Unity e Vanderle.IA sem perder a qualidade'],
-  ['van','Uma pergunta que recebo toda semana e como respondo'],
-  ['van','Uma decisão sobre a Vanderle.IA que quase não deu certo'],
-  ['ins','2 insights que tive na semana'],
-  ['ins','Insight sobre gestão de pessoas e leitura da semana'],
-  ['ins','2 insights de conteúdo consumido na semana'],
-  ['ins','Insight sobre equilíbrio entre as frentes de negócio']
+// Banco de ideias por pilar — gerado pela IA do projeto (rev. 2026-08-11).
+// Amplo por design: ideias, não roteiros. Cada item: [pilar, tipo ('t'=tema | 'i'=ignição), texto]
+const IDEIAS=[
+  // GESTÃO DE TIME
+  ['time','t','Como decido quando delegar algo em vez de fazer eu mesmo'],
+  ['time','t','Como o time toca Unity e Vanderle.IA sem perder a qualidade'],
+  ['time','t','O ritual de time que mais me economiza tempo na semana'],
+  ['time','t','Como os agentes de IA viraram parte do time do escritório'],
+  ['time','t','O que um time pequeno faz melhor que um grande'],
+  ['time','t','Reunião que eu matei — e ninguém sentiu falta'],
+  ['time','i','Qual tarefa só você fazia há um ano — e quem faz hoje? O que destravou a passagem?'],
+  ['time','i','Se você sumisse por 30 dias, o que quebraria primeiro na operação? Por que ainda depende de você?'],
+  ['time','i','Qual foi a última vez que o time decidiu melhor sem você na sala?'],
+  ['time','i','O que você cobra do time que ainda não cobra de si mesmo?'],
+  ['time','i','Qual processo virou burocracia — e quem tem coragem de matar?'],
+  ['time','i','Onde o "sempre foi assim" ainda manda no seu time?'],
+  ['time','i','Qual conversa o time está evitando ter — e quanto ela custa por semana?'],
+  ['time','i','O que o seu melhor funcionário faz que ninguém documentou?'],
+  // GESTÃO DE PESSOAS
+  ['pes','t','3 perguntas que faço antes de contratar alguém'],
+  ['pes','t','Como eu dou feedback sem quebrar a relação'],
+  ['pes','t','O erro de contratação que mais me ensinou'],
+  ['pes','t','Como lidero gente mais velha e mais experiente que eu'],
+  ['pes','t','O que faz alguém crescer rápido dentro da Unity'],
+  ['pes','t','Demitir rápido ou insistir na pessoa: onde traço a linha'],
+  ['pes','i','Qual contratação te ensinou mais: a melhor ou a pior? Conta a história.'],
+  ['pes','i','Que sinal em entrevista você ignorou uma vez — e nunca mais?'],
+  ['pes','i','Feedback que você recebeu e doeu — mas te mudou. Qual foi?'],
+  ['pes','i','Quem apostou em você antes de você se achar pronto? O que isso mudou na forma como você promove?'],
+  ['pes','i','Qual talento você perdeu por não agir a tempo?'],
+  ['pes','i','Caráter se contrata ou se treina? Defenda com um caso real.'],
+  ['pes','i','O que a geração Z te cobra que a sua geração aceitava calada?'],
+  ['pes','i','Qual pessoa do time te surpreendeu este mês — e você contou pra ela?'],
+  // UNITY
+  ['uni','t','Como a Unity resolve um problema que a maioria ainda não resolveu'],
+  ['uni','t','Um erro que a Unity cometeu e como corrigimos'],
+  ['uni','t','Por que a Unity não tem caminhão — e por que isso é força'],
+  ['uni','t','Bastidor de um fechamento de mês na transportadora'],
+  ['uni','t','Uma decisão de operação desta semana, do começo ao fim'],
+  ['uni','t','O que o cliente compra da Unity que não é frete'],
+  ['uni','i','Qual foi o frete mais difícil do mês — e o que ele revelou da operação?'],
+  ['uni','i','O que a indústria exige da transportadora que ela mesma não faz?'],
+  ['uni','i','Cliente-âncora: bênção ou risco? A resposta honesta de quem tem.'],
+  ['uni','i','Que número da operação você olha todo dia — e qual deveria olhar e não olha?'],
+  ['uni','i','Qual promessa comercial a operação paga caro pra cumprir?'],
+  ['uni','i','O agregado é seu parceiro ou seu fornecedor? A resposta muda como você o trata.'],
+  ['uni','i','O que quase deu errado esta semana e o cliente nunca soube?'],
+  ['uni','i','Se a Unity perdesse o maior cliente amanhã, qual é o plano real?'],
+  // VANDERLE.IA
+  ['van','t','Por que a nossa IA tem nome de gente'],
+  ['van','t','O motorista não queria app — o que fizemos no lugar'],
+  ['van','t','O que a IA já resolve de verdade na logística (sem hype)'],
+  ['van','t','Uma decisão sobre a Vanderle.IA que quase não deu certo'],
+  ['van','t','Do MVP ao assinante pago: o que estou aprendendo sobre conversão'],
+  ['van','t','Uma pergunta que recebo toda semana e como respondo'],
+  ['van','i','Qual feedback de motorista mudou o produto? Conta a conversa.'],
+  ['van','i','O que o motorista faz no WhatsApp que nenhum TMS entendeu ainda?'],
+  ['van','i','Qual feature você cortou — e o produto ficou melhor sem ela?'],
+  ['van','i','Quem paga: a transportadora ou o motorista? Por que essa resposta define o produto.'],
+  ['van','i','O dia em que a IA errou com um usuário: o que você fez?'],
+  ['van','i','O que você sabe da ponta da estrada que uma software house nunca vai saber?'],
+  ['van','i','Qual métrica do MVP te tira o sono — e qual te dá esperança?'],
+  ['van','i','Se a Vanderle.IA sumisse hoje, o que o mercado perderia de verdade?'],
+  // AUTORIDADE & EVENTOS
+  ['aut','t','O que ninguém conta sobre empreender no setor de logística'],
+  ['aut','t','Minha visão sobre pra onde a logística no Brasil está indo'],
+  ['aut','t','Uma lição que aprendi com outro empresário'],
+  ['aut','t','Bastidor de um evento ou conversa relevante do setor'],
+  ['aut','t','Como penso em crescer sem perder o controle da operação'],
+  ['aut','t','A tese que eu defendo e o mercado ainda dá nota mediana'],
+  ['aut','i','Qual verdade do TRC você só fala em mesa fechada — e já pode falar em público?'],
+  ['aut','i','Quem está rindo de quem no frete hoje — e quem vai parar de rir primeiro?'],
+  ['aut','i','Qual conselho famoso do mercado simplesmente não funciona na logística?'],
+  ['aut','i','O que você defendia há 2 anos e hoje mudou? O que te fez mudar?'],
+  ['aut','i','Se você abrisse uma transportadora do zero hoje, o que faria diferente de tudo?'],
+  ['aut','i','Qual burocracia do frete está esperando alguém ter coragem de atacar?'],
+  ['aut','i','O que o transportador tradicional entende que a logtech de escritório ignora?'],
+  ['aut','i','Daqui a 5 anos, o que do TRC de hoje vai parecer absurdo?'],
+  // VIDA REAL
+  ['vida','t','Como é meu dia a dia — sem filtro de LinkedIn'],
+  ['vida','t','O que a paternidade mudou na forma como eu trabalho'],
+  ['vida','t','Futebol de quarta: o que a pelada ensina que a reunião não ensina'],
+  ['vida','t','Recap da semana — bastidores do que não postei'],
+  ['vida','t','Um hábito que sustenta minha semana (e não é acordar às 5h)'],
+  ['vida','t','O que a fé muda na forma como eu decido'],
+  ['vida','i','O que você desliga de verdade no fim de semana — e o que só finge desligar?'],
+  ['vida','i','Qual momento com a sua filha te ensinou algo que reunião nenhuma ensinou?'],
+  ['vida','i','O que o dinheiro mudou em você — e o que você não deixou mudar?'],
+  ['vida','i','Qual foi o último dia em que você não pensou em empresa? O que tinha nele?'],
+  ['vida','i','O que sua esposa vê no seu trabalho que você não vê?'],
+  ['vida','i','Qual ritual pequeno da sua semana você defenderia mais que qualquer reunião?'],
+  ['vida','i','De que parte da sua rotina você tem orgulho — e qual esconderia do seu público?'],
+  ['vida','i','O que Volta Redonda ainda explica em você?'],
+  // INSIGHT DA SEMANA
+  ['ins','t','2 insights que tive na semana'],
+  ['ins','t','Insight da leitura ou do conteúdo que consumi na semana'],
+  ['ins','t','O número da semana que me surpreendeu'],
+  ['ins','t','O erro da semana que já virou processo'],
+  ['ins','t','Insight sobre equilibrar as frentes de negócio'],
+  ['ins','t','A conversa da semana que merecia ter durado mais'],
+  ['ins','i','O que você aprendeu esta semana que gostaria de ter aprendido há 5 anos?'],
+  ['ins','i','Qual ideia desta semana você quase deixou passar sem anotar?'],
+  ['ins','i','O que você leu ou ouviu e discordou — e por quê?'],
+  ['ins','i','Qual pergunta de alguém do time te travou esta semana?'],
+  ['ins','i','Se a semana recomeçasse na segunda, o que você faria diferente?'],
+  ['ins','i','Qual decisão da semana você tomou rápido demais — ou devagar demais?'],
+  ['ins','i','O que funcionou tão bem esta semana que merece virar padrão?'],
+  ['ins','i','Qual conversa, número ou incômodo desta semana vira conteúdo?']
 ];
 const STATUS=['Planejado','Gravado','Editado','Publicado'];
 const USERS=['PH','Rodrigo','Fabiano'];
@@ -603,16 +689,22 @@ function renderCal(){
   $('wizBtn').onclick=planWeek;
   $('cal').querySelectorAll('.cal-d').forEach(el=>el.onclick=()=>dayPanel(el.dataset.k));
 }
-// Sugestões de ignição conectadas ao tema (match por pilar + palavras)
-function sugerir(pilar,tema,n,excl){
-  const cats=PILARES[pilar].cats;
-  const words=(tema||'').toLowerCase().split(/\W+/).filter(w=>w.length>3);
-  const cand=DATA.map((d,i)=>i).filter(i=>cats.includes(DATA[i][0])&&!S.used.includes(i)&&!(excl||[]).includes(i));
-  const scored=cand.map(i=>{
-    const txt=(DATA[i][1]+' '+(DATA[i][3]||'')).toLowerCase();
-    return [i,words.reduce((s,w)=>s+(txt.includes(w)?1:0),0)+Math.random()*.5];
-  }).sort((a,b)=>b[1]-a[1]);
-  return scored.slice(0,n).map(x=>x[0]);
+// Banco de ideias: sorteia mix de temas (💡) e ignições (🔥) escritos para o pilar
+function bancoIdeias(pilar,n,excl){
+  const sh=a=>[...a].sort(()=>Math.random()-.5);
+  const ok=j=>IDEIAS[j][0]===pilar&&!(excl||[]).includes(j);
+  const te=sh(IDEIAS.map((x,j)=>j).filter(j=>ok(j)&&IDEIAS[j][1]==='t'));
+  const ig=sh(IDEIAS.map((x,j)=>j).filter(j=>ok(j)&&IDEIAS[j][1]==='i'));
+  const out=[];
+  while(out.length<n&&(te.length||ig.length)){
+    if(te.length)out.push(te.shift());
+    if(out.length<n&&ig.length)out.push(ig.shift());
+  }
+  return out;
+}
+function ideiaHTML(j,selTxt){
+  const tp=IDEIAS[j][1], tx=IDEIAS[j][2];
+  return `<div class="sug ${selTxt===tx?'on':''}" data-j="${j}">${tp==='t'?'💡':'🔥'} ${tx}</div>`;
 }
 function planWeek(){
   const now=new Date(), dow=now.getDay()||7;
@@ -627,7 +719,7 @@ function planWeek(){
   const start=()=>{
     wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>📋 Planejar a semana</h2>
       <button class="focus-close" id="wz-x">✕</button></div>
-      <p class="wiz-q">Qual semana vamos montar? Vou te guiar dia a dia: tema → ignição. Rapidinho.</p>
+      <p class="wiz-q">Qual semana vamos montar? Dia a dia: pilar → ideia. Rapidinho.</p>
       <button class="pbtn" style="max-width:none;margin-bottom:10px" id="wz-esta">Esta semana (${String(mon.getDate()).padStart(2,'0')}/${String(mon.getMonth()+1).padStart(2,'0')})</button>
       <button class="pbtn" style="max-width:none" id="wz-prox">Próxima semana (${String(nextMon.getDate()).padStart(2,'0')}/${String(nextMon.getMonth()+1).padStart(2,'0')})</button></div>`;
     wiz.querySelector('#wz-x').onclick=closeWiz;
@@ -640,9 +732,8 @@ function planWeek(){
     const d=new Date(base); d.setDate(base.getDate()+step);
     const k=iso(d), a=S.days[k]||{};
     let sel={p:a.p||null,t:a.t||'',ig:a.ig!==undefined?a.ig:null,igt:a.igt||''};
-    let sugs=[], excl=[];
+    let bank=[], excl=[];
     const paint=()=>{
-      const temas=sel.p?TEMAS.filter(t=>t[0]===sel.p):[];
       wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>📋 Semana</h2><button class="focus-close" id="wz-x">✕</button></div>
         <div class="wiz-prog">Dia ${step+1} de 5</div>
         <div class="wiz-day" style="${sel.p?`color:${PILARES[sel.p].c}`:''}">${DIAS[step]} · ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</div>
@@ -650,37 +741,30 @@ function planWeek(){
         <div class="pilar-row">${Object.entries(PILARES).map(([key,p])=>
           `<button class="pilar-b ${sel.p===key?'on':''}" data-p="${key}"
             style="${sel.p===key?`background:${p.c};border-color:${p.c}`:`color:${p.c};border-color:${p.c}55`}">${p.n}</button>`).join('')}</div>
-        ${sel.p?`<p class="wiz-q">2. Tema:</p>
-          <select class="tema-sel" id="wz-tema"><option value="">— tema do banco —</option>
-            ${temas.map(t=>`<option ${sel.t===t[1]?'selected':''}>${t[1]}</option>`).join('')}
-            ${sel.t&&!temas.some(t=>t[1]===sel.t)?`<option selected>${sel.t}</option>`:''}</select>
-          <input class="tema-sel" id="wz-livre" placeholder="ou tema livre…">
-          <p class="wiz-q">3. Ignição sugerida pra esse tema <button class="wiz-skip" id="wz-mais">🎲 outras</button>:</p>
-          <div id="wz-sugs">${sugs.map(i=>`<div class="sug ${sel.ig===i?'on':''}" data-i="${i}">${DATA[i][1]}${DATA[i][2]?`<small>— ${DATA[i][2]}</small>`:''}</div>`).join('')}</div>
-          <input class="tema-sel" id="wz-iglivre" placeholder="✍️ ou escreva a sua ignição…" value="${sel.igt||''}">`:''}
+        ${sel.p?`<p class="wiz-q">2. Banco de ideias <button class="wiz-skip" id="wz-mais">🎲 outras</button>:</p>
+          <div id="wz-sugs">${bank.map(j=>ideiaHTML(j,sel.t)).join('')}</div>
+          <input class="tema-sel" id="wz-livre" placeholder="✍️ ou escreva a sua ideia…" value="${sel.t&&!IDEIAS.some(x=>x[2]===sel.t)?sel.t:''}">`:''}
         <div class="actions">${sel.p?`<button class="act draw" id="wz-next">${step<4?'Próximo dia →':'Fechar semana →'}</button>`:''}
           <button class="act" id="wz-pular" style="flex:.5">Pular dia</button></div>
       </div>`;
       wiz.querySelector('#wz-x').onclick=closeWiz;
-      wiz.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;sel.ig=null;excl=[];sugs=sugerir(sel.p,sel.t,3,excl);paint()});
-      const ts=wiz.querySelector('#wz-tema'); if(ts)ts.onchange=()=>{sel.t=ts.value;sugs=sugerir(sel.p,sel.t,3,[]);excl=[...sugs];paint()};
-      const lv=wiz.querySelector('#wz-livre'); if(lv)lv.onchange=()=>{if(lv.value.trim()){sel.t=lv.value.trim();sugs=sugerir(sel.p,sel.t,3,[]);excl=[...sugs];paint()}};
-      const ms=wiz.querySelector('#wz-mais'); if(ms)ms.onclick=()=>{sugs=sugerir(sel.p,sel.t,3,excl);excl=excl.concat(sugs);if(sugs.length)paint()};
-      wiz.querySelectorAll('.sug').forEach(s=>s.onclick=()=>{sel.ig=+s.dataset.i;sel.igt='';paint()});
-      const igl=wiz.querySelector('#wz-iglivre'); if(igl)igl.onchange=()=>{if(igl.value.trim()){sel.igt=igl.value.trim();sel.ig=null}};
-      const nx=wiz.querySelector('#wz-next'); if(nx)nx.onclick=()=>{
-        const igl2=wiz.querySelector('#wz-iglivre'); if(igl2&&igl2.value.trim()){sel.igt=igl2.value.trim();}
+      wiz.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];paint()});
+      const ms=wiz.querySelector('#wz-mais'); if(ms)ms.onclick=()=>{let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);paint()};
+      wiz.querySelectorAll('.sug').forEach(s=>s.onclick=()=>{sel.t=IDEIAS[+s.dataset.j][2];sel.ig=null;sel.igt='';paint()});
+      const lv=wiz.querySelector('#wz-livre'); if(lv)lv.onchange=()=>{if(lv.value.trim()){sel.t=lv.value.trim();sel.ig=null;paint()}};
+      const nx2=wiz.querySelector('#wz-next'); if(nx2)nx2.onclick=()=>{
+        const lv2=wiz.querySelector('#wz-livre'); if(lv2&&lv2.value.trim())sel.t=lv2.value.trim();
         plano[step]={k,p:sel.p,t:sel.t,ig:sel.ig,igt:sel.igt};step++;dia()};
       const pl=wiz.querySelector('#wz-pular'); if(pl)pl.onclick=()=>{plano[step]=null;step++;dia()};
     };
-    if(sel.p){sugs=sugerir(sel.p,sel.t,3,[]);excl=[...sugs];}
+    if(sel.p){bank=bancoIdeias(sel.p,4,[]);excl=[...bank];}
     paint();
   };
 
   const resumo=()=>{
     wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>✅ Semana montada</h2><button class="focus-close" id="wz-x">✕</button></div>
       ${plano.map((p,i)=>p?`<div class="wiz-sum"><b style="color:${PILARES[p.p].c}">${DIAS[i]} · ${PILARES[p.p].n}</b><br>
-        ${p.t||'(sem tema)'}${p.ig!==null&&p.ig!==undefined?`<br><span style="color:var(--muted)">🔥 ${DATA[p.ig][1].slice(0,90)}…</span>`:p.igt?`<br><span style="color:var(--muted)">✍️ ${p.igt}</span>`:''}</div>`:`<div class="wiz-sum" style="color:var(--dim)">${DIAS[i]} · livre</div>`).join('')}
+        ${p.t||'(sem ideia)'}${p.ig!==null&&p.ig!==undefined?`<br><span style="color:var(--muted)">🔥 ${DATA[p.ig][1].slice(0,90)}…</span>`:p.igt?`<br><span style="color:var(--muted)">✍️ ${p.igt}</span>`:''}</div>`:`<div class="wiz-sum" style="color:var(--dim)">${DIAS[i]} · livre</div>`).join('')}
       <div class="actions"><button class="act draw" id="wz-save">Salvar no calendário</button></div></div>`;
     wiz.querySelector('#wz-x').onclick=closeWiz;
     wiz.querySelector('#wz-save').onclick=()=>{
@@ -696,40 +780,40 @@ function dayPanel(k){
   const [yy,mm,dd]=k.split('-');
   const scrim=document.createElement('div');scrim.className='scrim';
   const panel=document.createElement('div');panel.className='day-panel';
+  let bank=[], excl=[];
+  if(sel.p){bank=bancoIdeias(sel.p,4,[]);excl=[...bank];}
   const render=()=>{
     const pil=sel.p?PILARES[sel.p]:null;
-    const temas=sel.p?TEMAS.filter(t=>t[0]===sel.p):[];
     panel.innerHTML=`<div class="mode">${dd}/${mm} · planejamento</div>
       <div class="pilar-row">${Object.entries(PILARES).map(([key,p])=>
         `<button class="pilar-b ${sel.p===key?'on':''}" data-p="${key}"
           style="${sel.p===key?`background:${p.c};border-color:${p.c}`:`color:${p.c};border-color:${p.c}55`}">${p.n}</button>`).join('')}
       </div>
-      ${sel.p?`<select class="tema-sel" id="dpTema">
-        <option value="">— escolher tema do banco (${PILARES[sel.p].n}) —</option>
-        ${temas.map(t=>`<option ${sel.t===t[1]?'selected':''}>${t[1]}</option>`).join('')}
-        ${sel.t&&!temas.some(t=>t[1]===sel.t)?`<option selected>${sel.t}</option>`:''}
-      </select>
-      <input class="tema-sel" id="dpLivre" placeholder="ou escreva um tema livre…" value="">
+      ${sel.p?`<div class="cats">💡 Banco de ideias · ${pil.n} <button class="wiz-skip" id="dpMais">🎲 outras</button></div>
+      <div id="dpIdeias">${bank.map(j=>ideiaHTML(j,sel.t)).join('')}</div>
+      <input class="tema-sel" id="dpLivre" placeholder="✍️ ou escreva a sua ideia…" value="${sel.t&&!IDEIAS.some(x=>x[2]===sel.t)?sel.t:''}">
       <div class="st-row">${STATUS.map((s,i)=>`<button class="st-b ${sel.st===i?'on':''}" data-st="${i}">${s}</button>`).join('')}</div>
+      ${sel.t?`<div class="cats">✅ Ideia do dia: ${sel.t.slice(0,120)}</div>`:''}
       ${sel.ig!==null&&sel.ig!==undefined?`<div class="cats">🔥 Ignição do dia: ${DATA[sel.ig][1].slice(0,110)}</div>`:sel.igt?`<div class="cats">✍️ Ignição: ${sel.igt}</div>`:''}
       <div class="actions">
         <button class="act draw" id="dpIgn">🔥 Ver ignições do pilar</button>
         <button class="act" id="dpSave">Salvar</button>
         <button class="act" id="dpClear" style="flex:.6">🗑</button>
       </div>`:`<div class="cats">Escolha o pilar do dia para planejar.</div>`}`;
-    panel.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;render()});
-    const tsel=panel.querySelector('#dpTema'); if(tsel)tsel.onchange=()=>{sel.t=tsel.value};
+    panel.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];render()});
+    const ms=panel.querySelector('#dpMais'); if(ms)ms.onclick=()=>{let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);render()};
+    panel.querySelectorAll('.sug').forEach(s=>s.onclick=()=>{sel.t=IDEIAS[+s.dataset.j][2];sel.ig=null;sel.igt='';render()});
     const liv=panel.querySelector('#dpLivre'); if(liv)liv.onchange=()=>{if(liv.value.trim())sel.t=liv.value.trim()};
     panel.querySelectorAll('.st-b').forEach(b=>b.onclick=()=>{sel.st=+b.dataset.st;render()});
     const ign=panel.querySelector('#dpIgn'); if(ign)ign.onclick=()=>{
       const cats=PILARES[sel.p].cats;
       const p2=DATA.map((d,i)=>i).filter(i=>cats.includes(DATA[i][0])&&!S.used.includes(i));
-      S.days[k]={p:sel.p,t:sel.t,st:sel.st};save();
+      S.days[k]={p:sel.p,t:sel.t,st:sel.st,ig:sel.ig,igt:sel.igt};save();
       close();setView('draw');
       if(p2.length){cur=p2[Math.floor(Math.random()*p2.length)];cardEl.innerHTML=cardHTML(cur,false);stats();}
       window.scrollTo({top:0});
     };
-    const sv=panel.querySelector('#dpSave'); if(sv)sv.onclick=()=>{S.days[k]={p:sel.p,t:sel.t,st:sel.st,ig:sel.ig,igt:sel.igt};save();close();renderCal()};
+    const sv=panel.querySelector('#dpSave'); if(sv)sv.onclick=()=>{const lv=panel.querySelector('#dpLivre');if(lv&&lv.value.trim())sel.t=lv.value.trim();S.days[k]={p:sel.p,t:sel.t,st:sel.st,ig:sel.ig,igt:sel.igt};save();close();renderCal()};
     const cl=panel.querySelector('#dpClear'); if(cl)cl.onclick=()=>{delete S.days[k];save();close();renderCal()};
   };
   const close=()=>{scrim.remove();panel.remove()};
