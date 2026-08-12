@@ -175,6 +175,13 @@
   .wiz-sum{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:14px}
   .wiz-sum b{font-family:var(--disp);text-transform:uppercase;font-size:12px;letter-spacing:.06em}
 
+  /* ALERTA DE GRAVAÇÃO */
+  .alertbar{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ember);border-radius:12px;
+    padding:13px 15px;margin:2px 0 12px;display:flex;align-items:center;gap:12px}
+  .alertbar .tx{flex:1;font-size:14px;color:var(--muted)}
+  .alertbar .tx b{color:var(--text)}
+  button.act:disabled{opacity:.45;cursor:default;transform:none}
+
   /* MODO FOCO */
   .focus-overlay{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;
     justify-content:center;padding:8vw;gap:22px}
@@ -197,6 +204,7 @@
     </div>
   </header>
   <div class="stats" id="stats"></div>
+  <div id="alert"></div>
 
   <div class="chipwrap">
     <div class="chips" id="chips"></div>
@@ -567,6 +575,7 @@ for(const k in S.days){if(S.days[k]===true)S.days[k]={st:1}}
 S.ideas=S.ideas||[];
 S.user=S.user||null;
 const save=()=>localStorage.setItem(K,JSON.stringify(S));
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 let filter=null, cur=-1, showUsed=false, view='all';
 let calRef=new Date();
 
@@ -611,7 +620,7 @@ function renderList(){
     h+=`<div class="group-h" style="color:#4ade80">💡 Ideias do time<small>${S.ideas.length}</small></div><div class="rows">`;
     S.ideas.forEach((id,ix)=>{
       h+=`<div class="row" style="border-left-color:#4ade80" data-idea="${ix}" tabindex="0">
-        <div class="body"><p>${id.txt}</p><div class="by">por ${id.by} · ${id.dt}${id.cat?` · sugerida para ${CATS[id.cat]?CATS[id.cat].n:id.cat}`:''}</div></div>
+        <div class="body"><p>${esc(id.txt)}</p><div class="by">por ${id.by} · ${id.dt}${id.cat?` · sugerida para ${CATS[id.cat]?CATS[id.cat].n:id.cat}`:''}</div></div>
         <span class="m">✕</span></div>`;
     });
     h+=`</div>`;
@@ -672,11 +681,12 @@ function renderCal(){
   for(let d=1;d<=nd;d++){
     const dt=new Date(y,m,d), k=iso(dt), a=S.days[k], dow=dt.getDay(), wk=(dow===0||dow===6);
     const pil=a&&a.p?PILARES[a.p]:null;
-    const label=a&&a.t?a.t:(pil?pil.n:(wk?'Livre · stories':'—'));
+    const nSug=a&&a.sug?a.sug.length:0;
+    const label=a&&a.t?a.t:(nSug?`💡 ${nSug} ideia${nSug>1?'s':''}`:(pil?pil.n:(wk?'Livre · stories':'—')));
     const stch=a&&a.st>=0?['◇','●','◆','✓'][a.st]:'';
     h+=`<div class="cal-d ${wk&&!a?'free':''} ${k===today?'today':''} ${a&&a.st===3?'done':''}" data-k="${k}"
       ${pil?`style="border-left:3px solid ${pil.c}"`:''}>
-      <span class="n">${d}</span><span class="tag" ${pil?`style="color:${pil.c}"`:''}>${label}</span>
+      <span class="n">${d}</span><span class="tag" ${pil?`style="color:${pil.c}"`:''}>${esc(label)}</span>
       ${stch?`<span class="stb" style="color:${pil?pil.c:'var(--muted)'}">${stch}</span>`:''}</div>`;
   }
   h+=`</div><div class="cal-legend">
@@ -731,9 +741,10 @@ function planWeek(){
     if(step>=5)return resumo();
     const d=new Date(base); d.setDate(base.getDate()+step);
     const k=iso(d), a=S.days[k]||{};
-    let sel={p:a.p||null,t:a.t||'',ig:a.ig!==undefined?a.ig:null,igt:a.igt||''};
+    let sel={p:a.p||null,sug:(a.sug||(a.t?[a.t]:[])).slice()};
     let bank=[], excl=[];
     const paint=()=>{
+      const outras=sel.sug.filter(s=>!bank.some(j=>IDEIAS[j][2]===s));
       wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>📋 Semana</h2><button class="focus-close" id="wz-x">✕</button></div>
         <div class="wiz-prog">Dia ${step+1} de 5</div>
         <div class="wiz-day" style="${sel.p?`color:${PILARES[sel.p].c}`:''}">${DIAS[step]} · ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</div>
@@ -741,20 +752,29 @@ function planWeek(){
         <div class="pilar-row">${Object.entries(PILARES).map(([key,p])=>
           `<button class="pilar-b ${sel.p===key?'on':''}" data-p="${key}"
             style="${sel.p===key?`background:${p.c};border-color:${p.c}`:`color:${p.c};border-color:${p.c}55`}">${p.n}</button>`).join('')}</div>
-        ${sel.p?`<p class="wiz-q">2. Banco de ideias <button class="wiz-skip" id="wz-mais">🎲 outras</button>:</p>
-          <div id="wz-sugs">${bank.map(j=>ideiaHTML(j,sel.t)).join('')}</div>
-          <input class="tema-sel" id="wz-livre" placeholder="✍️ ou escreva a sua ideia…" value="${sel.t&&!IDEIAS.some(x=>x[2]===sel.t)?sel.t:''}">`:''}
+        ${sel.p?`<p class="wiz-q">2. Banco de ideias — marque as sugestões do dia (quem grava escolhe uma) <button class="wiz-skip" id="wz-mais">🎲 outras</button>:</p>
+          <div id="wz-sugs">${bank.map(j=>`<div class="sug ${sel.sug.includes(IDEIAS[j][2])?'on':''}" data-j="${j}">${IDEIAS[j][1]==='t'?'💡':'🔥'} ${IDEIAS[j][2]}</div>`).join('')}</div>
+          <input class="tema-sel" id="wz-livre" placeholder="✍️ ou escreva uma sugestão e dê Enter…">
+          ${outras.length?`<p class="wiz-q">Também selecionadas (toque para remover):</p>
+          <div>${outras.map((s,ix)=>`<div class="sug on" data-rm="${ix}">✕ ${esc(s)}</div>`).join('')}</div>`:''}
+          ${sel.sug.length?`<p class="wiz-q">✅ ${sel.sug.length} sugest${sel.sug.length>1?'ões':'ão'} pro dia</p>`:''}`:''}
         <div class="actions">${sel.p?`<button class="act draw" id="wz-next">${step<4?'Próximo dia →':'Fechar semana →'}</button>`:''}
           <button class="act" id="wz-pular" style="flex:.5">Pular dia</button></div>
       </div>`;
       wiz.querySelector('#wz-x').onclick=closeWiz;
       wiz.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];paint()});
       const ms=wiz.querySelector('#wz-mais'); if(ms)ms.onclick=()=>{let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);paint()};
-      wiz.querySelectorAll('.sug').forEach(s=>s.onclick=()=>{sel.t=IDEIAS[+s.dataset.j][2];sel.ig=null;sel.igt='';paint()});
-      const lv=wiz.querySelector('#wz-livre'); if(lv)lv.onchange=()=>{if(lv.value.trim()){sel.t=lv.value.trim();sel.ig=null;paint()}};
+      wiz.querySelectorAll('.sug[data-j]').forEach(s=>s.onclick=()=>{
+        const tx=IDEIAS[+s.dataset.j][2];
+        sel.sug=sel.sug.includes(tx)?sel.sug.filter(x=>x!==tx):[...sel.sug,tx];paint()});
+      wiz.querySelectorAll('.sug[data-rm]').forEach(s=>s.onclick=()=>{
+        sel.sug=sel.sug.filter(x=>x!==outras[+s.dataset.rm]);paint()});
+      const lv=wiz.querySelector('#wz-livre'); if(lv)lv.onchange=()=>{
+        const v=lv.value.trim(); if(v&&!sel.sug.includes(v)){sel.sug=[...sel.sug,v];paint()}};
       const nx2=wiz.querySelector('#wz-next'); if(nx2)nx2.onclick=()=>{
-        const lv2=wiz.querySelector('#wz-livre'); if(lv2&&lv2.value.trim())sel.t=lv2.value.trim();
-        plano[step]={k,p:sel.p,t:sel.t,ig:sel.ig,igt:sel.igt};step++;dia()};
+        const lv2=wiz.querySelector('#wz-livre'), v2=lv2?lv2.value.trim():'';
+        if(v2&&!sel.sug.includes(v2))sel.sug=[...sel.sug,v2];
+        plano[step]={k,p:sel.p,sug:sel.sug};step++;dia()};
       const pl=wiz.querySelector('#wz-pular'); if(pl)pl.onclick=()=>{plano[step]=null;step++;dia()};
     };
     if(sel.p){bank=bancoIdeias(sel.p,4,[]);excl=[...bank];}
@@ -764,62 +784,113 @@ function planWeek(){
   const resumo=()=>{
     wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>✅ Semana montada</h2><button class="focus-close" id="wz-x">✕</button></div>
       ${plano.map((p,i)=>p?`<div class="wiz-sum"><b style="color:${PILARES[p.p].c}">${DIAS[i]} · ${PILARES[p.p].n}</b><br>
-        ${p.t||'(sem ideia)'}${p.ig!==null&&p.ig!==undefined?`<br><span style="color:var(--muted)">🔥 ${DATA[p.ig][1].slice(0,90)}…</span>`:p.igt?`<br><span style="color:var(--muted)">✍️ ${p.igt}</span>`:''}</div>`:`<div class="wiz-sum" style="color:var(--dim)">${DIAS[i]} · livre</div>`).join('')}
+        ${p.sug&&p.sug.length?p.sug.map(s=>`<span style="color:var(--muted)">· ${esc(s)}</span>`).join('<br>'):'(sem sugestões)'}</div>`:`<div class="wiz-sum" style="color:var(--dim)">${DIAS[i]} · sem mudança</div>`).join('')}
       <div class="actions"><button class="act draw" id="wz-save">Salvar no calendário</button></div></div>`;
     wiz.querySelector('#wz-x').onclick=closeWiz;
     wiz.querySelector('#wz-save').onclick=()=>{
-      plano.forEach(p=>{if(p&&p.p)S.days[p.k]={p:p.p,t:p.t,st:0,ig:p.ig,igt:p.igt}});
-      save();closeWiz();renderCal();
+      plano.forEach(p=>{if(p&&p.p){const old=S.days[p.k]||{};
+        S.days[p.k]={...old,p:p.p,sug:p.sug||[],st:old.st!==undefined?old.st:0,t:old.st>=1?old.t:'',by:S.user||old.by||null};}});
+      save();closeWiz();renderCal();renderAlert();
     };
   };
   start();
 }
-function dayPanel(k){
+function dayPanel(k,mode){
   const a=S.days[k]||{};
-  let sel={p:a.p||null,t:a.t||'',st:a.st!==undefined?a.st:0,ig:a.ig!==undefined?a.ig:null,igt:a.igt||''};
+  let sel={p:a.p||null,sug:(a.sug||(a.t?[a.t]:[])).slice(),t:a.t||'',st:a.st!==undefined?a.st:0,by:a.by||null};
+  let md=mode||'plan';
+  const init=JSON.stringify(sel);
   const [yy,mm,dd]=k.split('-');
   const scrim=document.createElement('div');scrim.className='scrim';
   const panel=document.createElement('div');panel.className='day-panel';
   let bank=[], excl=[];
   if(sel.p){bank=bancoIdeias(sel.p,4,[]);excl=[...bank];}
+  const persist=extra=>{S.days[k]={...a,p:sel.p,sug:sel.sug,t:sel.t,st:sel.st,by:sel.by,...(extra||{})};save();};
   const render=()=>{
     const pil=sel.p?PILARES[sel.p]:null;
-    panel.innerHTML=`<div class="mode">${dd}/${mm} · planejamento</div>
+    const hasPlan=!!(sel.p&&sel.sug.length);
+    const outras=sel.sug.filter(s=>!bank.some(j=>IDEIAS[j][2]===s));
+    const tabs=`<div class="st-row">
+      <button class="st-b ${md==='plan'?'on':''}" id="dpTabPlan">📝 Planejar</button>
+      <button class="st-b ${md==='rec'?'on':''}" id="dpTabRec" ${hasPlan?'':'disabled title="Planeje o dia primeiro"'}>🎬 Gravar</button></div>`;
+    const planBody=`
       <div class="pilar-row">${Object.entries(PILARES).map(([key,p])=>
         `<button class="pilar-b ${sel.p===key?'on':''}" data-p="${key}"
           style="${sel.p===key?`background:${p.c};border-color:${p.c}`:`color:${p.c};border-color:${p.c}55`}">${p.n}</button>`).join('')}
       </div>
-      ${sel.p?`<div class="cats">💡 Banco de ideias · ${pil.n} <button class="wiz-skip" id="dpMais">🎲 outras</button></div>
-      <div id="dpIdeias">${bank.map(j=>ideiaHTML(j,sel.t)).join('')}</div>
-      <input class="tema-sel" id="dpLivre" placeholder="✍️ ou escreva a sua ideia…" value="${sel.t&&!IDEIAS.some(x=>x[2]===sel.t)?sel.t:''}">
+      ${sel.p?`<div class="cats">💡 Banco de ideias · ${pil.n} <button class="wiz-skip" id="dpMais">🎲 outras</button><br>
+        <small>Toque para marcar quantas quiser — quem grava escolhe uma delas na hora.</small></div>
+      <div id="dpIdeias">${bank.map(j=>`<div class="sug ${sel.sug.includes(IDEIAS[j][2])?'on':''}" data-j="${j}">${IDEIAS[j][1]==='t'?'💡':'🔥'} ${IDEIAS[j][2]}</div>`).join('')}</div>
+      <input class="tema-sel" id="dpLivre" placeholder="✍️ ou escreva uma sugestão e dê Enter…">
+      ${outras.length?`<div class="cats">Também selecionadas (toque para remover):</div>
+      <div>${outras.map((s,ix)=>`<div class="sug on" data-rm="${ix}">✕ ${esc(s)}</div>`).join('')}</div>`:''}
+      ${sel.sug.length?`<div class="cats">✅ ${sel.sug.length} sugest${sel.sug.length>1?'ões':'ão'} pro dia</div>`:''}
       <div class="st-row">${STATUS.map((s,i)=>`<button class="st-b ${sel.st===i?'on':''}" data-st="${i}">${s}</button>`).join('')}</div>
-      ${sel.t?`<div class="cats">✅ Ideia do dia: ${sel.t.slice(0,120)}</div>`:''}
-      ${sel.ig!==null&&sel.ig!==undefined?`<div class="cats">🔥 Ignição do dia: ${DATA[sel.ig][1].slice(0,110)}</div>`:sel.igt?`<div class="cats">✍️ Ignição: ${sel.igt}</div>`:''}
       <div class="actions">
         <button class="act draw" id="dpIgn">🔥 Ver ignições do pilar</button>
         <button class="act" id="dpSave">Salvar</button>
         <button class="act" id="dpClear" style="flex:.6">🗑</button>
       </div>`:`<div class="cats">Escolha o pilar do dia para planejar.</div>`}`;
+    const recBody=`
+      ${pil?`<div class="cats" style="color:${pil.c};font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-weight:700">${pil.n}${sel.by?` · agenda por ${sel.by}`:''}</div>`:''}
+      <div class="cats">🎬 Sugestões pra gravar — escolha uma:</div>
+      <div>${sel.sug.map((s,ix)=>`<div class="sug ${sel.t===s?'on':''}" data-pk="${ix}">${sel.t===s?'🎥 ':''}${esc(s)}</div>`).join('')||'<div class="cats">Sem sugestões ainda — use a aba Planejar.</div>'}</div>
+      <input class="tema-sel" id="recLivre" placeholder="✍️ ou grave outra ideia…" value="${esc(sel.t&&!sel.sug.includes(sel.t)?sel.t:'')}">
+      ${sel.st>=1?`<div class="cats">● Este dia já está marcado como ${STATUS[sel.st].toLowerCase()}.</div>`:''}
+      <div class="actions">
+        <button class="act draw" id="recDone" ${sel.t?'':'disabled title="Escolha uma sugestão"'}>✅ Gravei essa</button>
+      </div>`;
+    panel.innerHTML=`<div class="mode">${dd}/${mm} · ${md==='rec'?'gravação':'planejamento'}</div>
+      ${tabs}${md==='rec'?recBody:planBody}`;
+    const tp=panel.querySelector('#dpTabPlan'); if(tp)tp.onclick=()=>{md='plan';render()};
+    const tr=panel.querySelector('#dpTabRec'); if(tr)tr.onclick=()=>{if(hasPlan){md='rec';render()}};
     panel.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];render()});
     const ms=panel.querySelector('#dpMais'); if(ms)ms.onclick=()=>{let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);render()};
-    panel.querySelectorAll('.sug').forEach(s=>s.onclick=()=>{sel.t=IDEIAS[+s.dataset.j][2];sel.ig=null;sel.igt='';render()});
-    const liv=panel.querySelector('#dpLivre'); if(liv)liv.onchange=()=>{if(liv.value.trim())sel.t=liv.value.trim()};
-    panel.querySelectorAll('.st-b').forEach(b=>b.onclick=()=>{sel.st=+b.dataset.st;render()});
+    panel.querySelectorAll('.sug[data-j]').forEach(s=>s.onclick=()=>{
+      const tx=IDEIAS[+s.dataset.j][2];
+      sel.sug=sel.sug.includes(tx)?sel.sug.filter(x=>x!==tx):[...sel.sug,tx];render()});
+    panel.querySelectorAll('.sug[data-rm]').forEach(s=>s.onclick=()=>{
+      sel.sug=sel.sug.filter(x=>x!==outras[+s.dataset.rm]);render()});
+    panel.querySelectorAll('.sug[data-pk]').forEach(s=>s.onclick=()=>{sel.t=sel.sug[+s.dataset.pk];render()});
+    const liv=panel.querySelector('#dpLivre'); if(liv)liv.onchange=()=>{
+      const v=liv.value.trim(); if(v&&!sel.sug.includes(v)){sel.sug=[...sel.sug,v];render()}};
+    const rlv=panel.querySelector('#recLivre'); if(rlv)rlv.onchange=()=>{if(rlv.value.trim()){sel.t=rlv.value.trim();render()}};
+    panel.querySelectorAll('.st-b[data-st]').forEach(b=>b.onclick=()=>{sel.st=+b.dataset.st;render()});
     const ign=panel.querySelector('#dpIgn'); if(ign)ign.onclick=()=>{
       const cats=PILARES[sel.p].cats;
       const p2=DATA.map((d,i)=>i).filter(i=>cats.includes(DATA[i][0])&&!S.used.includes(i));
-      S.days[k]={p:sel.p,t:sel.t,st:sel.st,ig:sel.ig,igt:sel.igt};save();
+      persist();
       close();setView('draw');
       if(p2.length){cur=p2[Math.floor(Math.random()*p2.length)];cardEl.innerHTML=cardHTML(cur,false);stats();}
       window.scrollTo({top:0});
     };
-    const sv=panel.querySelector('#dpSave'); if(sv)sv.onclick=()=>{const lv=panel.querySelector('#dpLivre');if(lv&&lv.value.trim())sel.t=lv.value.trim();S.days[k]={p:sel.p,t:sel.t,st:sel.st,ig:sel.ig,igt:sel.igt};save();close();renderCal()};
-    const cl=panel.querySelector('#dpClear'); if(cl)cl.onclick=()=>{delete S.days[k];save();close();renderCal()};
+    const sv=panel.querySelector('#dpSave'); if(sv)sv.onclick=()=>{
+      const lv=panel.querySelector('#dpLivre');
+      if(lv&&lv.value.trim()&&!sel.sug.includes(lv.value.trim()))sel.sug=[...sel.sug,lv.value.trim()];
+      persist({by:S.user||sel.by});close();renderCal();renderAlert()};
+    const dn=panel.querySelector('#recDone'); if(dn)dn.onclick=()=>{
+      const rl=panel.querySelector('#recLivre'); if(rl&&rl.value.trim())sel.t=rl.value.trim();
+      if(!sel.t)return;
+      sel.st=Math.max(sel.st,1);persist();close();renderCal();renderAlert()};
+    const cl=panel.querySelector('#dpClear'); if(cl)cl.onclick=()=>{
+      if(!confirm('Apagar o planejamento deste dia?'))return;
+      delete S.days[k];save();close();renderCal();renderAlert()};
   };
   const close=()=>{scrim.remove();panel.remove()};
-  scrim.onclick=close;
+  scrim.onclick=()=>{if(JSON.stringify(sel)!==init&&!confirm('Fechar sem salvar as mudanças?'))return;close()};
   document.body.append(scrim,panel);
   render();
+}
+// Alerta: hoje tem conteúdo planejado pra gravar
+function renderAlert(){
+  const el=$('alert'); if(!el)return;
+  const k=iso(new Date()), a=S.days[k];
+  const n=a&&a.sug?a.sug.length:(a&&a.t?1:0);
+  if(a&&a.p&&a.st===0&&n){
+    el.innerHTML=`<div class="alertbar"><div class="tx">🎬 <b>Hoje tem gravação</b> · ${PILARES[a.p].n} — ${n} sugest${n>1?'ões':'ão'}${a.by?` de ${a.by}`:''}</div>
+      <button class="act draw" id="alertGo" style="flex:0 0 auto;padding:10px 14px;font-size:12px">Escolher e gravar</button></div>`;
+    $('alertGo').onclick=()=>dayPanel(k,'rec');
+  } else el.innerHTML='';
 }
 $('btnDraw').onclick=draw;
 $('btnUsed').onclick=()=>{if(cur<0)return;S.used.includes(cur)?S.used=S.used.filter(x=>x!==cur):S.used.push(cur);save();stats();};
@@ -873,5 +944,5 @@ arrow.onclick=()=>chipsEl.scrollBy({left:200});
 const arrowCheck=()=>arrow.classList.toggle('off',chipsEl.scrollLeft>=chipsEl.scrollWidth-chipsEl.clientWidth-8);
 chipsEl.addEventListener('scroll',arrowCheck);
 addEventListener('resize',arrowCheck);
-renderChips();draw();setView('all');arrowCheck();pickUser(false);
+renderChips();draw();setView('all');arrowCheck();pickUser(false);renderAlert();
 </script>
