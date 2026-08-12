@@ -200,6 +200,7 @@
     <div class="brand">Ignição <em>·</em> PH</div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="user-chip" id="userChip" title="Trocar perfil">👤</button>
+      <button class="cal-btn" id="btnDrive" title="Pasta dos vídeos no Drive">📁 Drive</button>
       <button class="cal-btn" id="btnCal">📅 Calendário</button>
     </div>
   </header>
@@ -567,7 +568,7 @@ const IDEIAS=[
 ];
 const STATUS=['Planejado','Gravado','Editado','Publicado'];
 const USERS=['PH','Rodrigo','Fabiano'];
-const DRIVE_URL=''; // link da pasta do Drive dos vídeos — cole aqui para ativar o botão "📁 Abrir pasta do Drive"
+const DRIVE_URL=''; // link oficial da pasta do Drive dos vídeos — quando definido, vale para todo mundo
 
 const K='ignicao-ph-v1';
 let S=JSON.parse(localStorage.getItem(K)||'{"used":[],"fav":[]}');
@@ -815,7 +816,7 @@ function dayPanel(k,mode){
     const vlink=sel.video&&/^https?:\/\//.test(sel.video);
     const videoBlock=sel.st>=1?`
       <div class="cats">📹 Vídeo do card${vlink?` — <a href="${esc(sel.video)}" target="_blank" rel="noopener" style="color:var(--ember)">▶ abrir no Drive</a>`:sel.video?` — ⚠️ cole a URL completa (https://…)`:` — suba no Drive e cole o link aqui:`}</div>
-      ${DRIVE_URL?`<div style="margin:-4px 0 8px"><a href="${DRIVE_URL}" target="_blank" rel="noopener" class="wiz-skip">📁 Abrir pasta do Drive</a></div>`:''}
+      ${driveUrl()?`<div style="margin:-4px 0 8px"><a href="${esc(driveUrl())}" target="_blank" rel="noopener" class="wiz-skip">📁 Abrir pasta do Drive</a></div>`:''}
       <input class="tema-sel" id="dpVideo" placeholder="🔗 cole o link do vídeo no Drive…" value="${esc(sel.video||'')}">`:'';
     const tabs=`<div class="st-row">
       <button class="st-b ${md==='plan'?'on':''}" id="dpTabPlan">📝 Planejar</button>
@@ -891,6 +892,17 @@ function dayPanel(k,mode){
   document.body.append(scrim,panel);
   render();
 }
+// Acesso ao Drive: usa o link oficial (DRIVE_URL) ou o configurado neste aparelho (S.drive)
+const driveUrl=()=>DRIVE_URL||S.drive||'';
+$('btnDrive').onclick=()=>{
+  const u=driveUrl();
+  if(u){window.open(u,'_blank','noopener');return}
+  const v=prompt('Cole o link da pasta do Drive dos vídeos:');
+  if(!v)return;
+  const url=v.trim();
+  if(!/^https?:\/\//.test(url)){alert('Link inválido — cole a URL completa (https://…)');return}
+  S.drive=url;save();window.open(url,'_blank','noopener');
+};
 // Alerta: hoje tem conteúdo planejado pra gravar
 function renderAlert(){
   const el=$('alert'); if(!el)return;
