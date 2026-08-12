@@ -567,6 +567,7 @@ const IDEIAS=[
 ];
 const STATUS=['Planejado','Gravado','Editado','Publicado'];
 const USERS=['PH','Rodrigo','Fabiano'];
+const DRIVE_URL=''; // link da pasta do Drive dos vídeos — cole aqui para ativar o botão "📁 Abrir pasta do Drive"
 
 const K='ignicao-ph-v1';
 let S=JSON.parse(localStorage.getItem(K)||'{"used":[],"fav":[]}');
@@ -687,10 +688,11 @@ function renderCal(){
     h+=`<div class="cal-d ${wk&&!a?'free':''} ${k===today?'today':''} ${a&&a.st===3?'done':''}" data-k="${k}"
       ${pil?`style="border-left:3px solid ${pil.c}"`:''}>
       <span class="n">${d}</span><span class="tag" ${pil?`style="color:${pil.c}"`:''}>${esc(label)}</span>
-      ${stch?`<span class="stb" style="color:${pil?pil.c:'var(--muted)'}">${stch}</span>`:''}</div>`;
+      ${stch?`<span class="stb" style="color:${a.st===1?'#4ade80':(pil?pil.c:'var(--muted)')}">${stch}</span>`:''}
+      ${a&&a.video?`<span class="ok" style="top:4px;bottom:auto">📹</span>`:''}</div>`;
   }
   h+=`</div><div class="cal-legend">
-    <div class="lg"><b>Pipeline:</b> ◇ planejado · ● gravado · ◆ editado (pronto) · ✓ publicado</div>
+    <div class="lg"><b>Pipeline:</b> ◇ planejado · <span style="color:#4ade80">●</span> gravado · ◆ editado (pronto) · ✓ publicado · 📹 vídeo no Drive</div>
     <div class="lg"><b>Pilares:</b> ${Object.values(PILARES).map(p=>`<span style="color:${p.c}">${p.n}</span>`).join(' · ')}</div>
   </div>`;
   $('cal').innerHTML=h;
@@ -797,19 +799,24 @@ function planWeek(){
 }
 function dayPanel(k,mode){
   const a=S.days[k]||{};
-  let sel={p:a.p||null,sug:(a.sug||(a.t?[a.t]:[])).slice(),t:a.t||'',st:a.st!==undefined?a.st:0,by:a.by||null};
+  let sel={p:a.p||null,sug:(a.sug||(a.t?[a.t]:[])).slice(),t:a.t||'',st:a.st!==undefined?a.st:0,by:a.by||null,video:a.video||''};
   let md=mode||'plan';
-  const init=JSON.stringify(sel);
+  let clean=JSON.stringify(sel);
   const [yy,mm,dd]=k.split('-');
   const scrim=document.createElement('div');scrim.className='scrim';
   const panel=document.createElement('div');panel.className='day-panel';
   let bank=[], excl=[];
   if(sel.p){bank=bancoIdeias(sel.p,4,[]);excl=[...bank];}
-  const persist=extra=>{S.days[k]={...a,p:sel.p,sug:sel.sug,t:sel.t,st:sel.st,by:sel.by,...(extra||{})};save();};
+  const persist=extra=>{S.days[k]={...a,p:sel.p,sug:sel.sug,t:sel.t,st:sel.st,by:sel.by,video:sel.video,...(extra||{})};save();clean=JSON.stringify(sel);};
   const render=()=>{
     const pil=sel.p?PILARES[sel.p]:null;
     const hasPlan=!!(sel.p&&sel.sug.length);
     const outras=sel.sug.filter(s=>!bank.some(j=>IDEIAS[j][2]===s));
+    const vlink=sel.video&&/^https?:\/\//.test(sel.video);
+    const videoBlock=sel.st>=1?`
+      <div class="cats">📹 Vídeo do card${vlink?` — <a href="${esc(sel.video)}" target="_blank" rel="noopener" style="color:var(--ember)">▶ abrir no Drive</a>`:sel.video?` — ⚠️ cole a URL completa (https://…)`:` — suba no Drive e cole o link aqui:`}</div>
+      ${DRIVE_URL?`<div style="margin:-4px 0 8px"><a href="${DRIVE_URL}" target="_blank" rel="noopener" class="wiz-skip">📁 Abrir pasta do Drive</a></div>`:''}
+      <input class="tema-sel" id="dpVideo" placeholder="🔗 cole o link do vídeo no Drive…" value="${esc(sel.video||'')}">`:'';
     const tabs=`<div class="st-row">
       <button class="st-b ${md==='plan'?'on':''}" id="dpTabPlan">📝 Planejar</button>
       <button class="st-b ${md==='rec'?'on':''}" id="dpTabRec" ${hasPlan?'':'disabled title="Planeje o dia primeiro"'}>🎬 Gravar</button></div>`;
@@ -826,6 +833,7 @@ function dayPanel(k,mode){
       <div>${outras.map((s,ix)=>`<div class="sug on" data-rm="${ix}">✕ ${esc(s)}</div>`).join('')}</div>`:''}
       ${sel.sug.length?`<div class="cats">✅ ${sel.sug.length} sugest${sel.sug.length>1?'ões':'ão'} pro dia</div>`:''}
       <div class="st-row">${STATUS.map((s,i)=>`<button class="st-b ${sel.st===i?'on':''}" data-st="${i}">${s}</button>`).join('')}</div>
+      ${videoBlock}
       <div class="actions">
         <button class="act draw" id="dpIgn">🔥 Ver ignições do pilar</button>
         <button class="act" id="dpSave">Salvar</button>
@@ -836,9 +844,10 @@ function dayPanel(k,mode){
       <div class="cats">🎬 Sugestões pra gravar — escolha uma:</div>
       <div>${sel.sug.map((s,ix)=>`<div class="sug ${sel.t===s?'on':''}" data-pk="${ix}">${sel.t===s?'🎥 ':''}${esc(s)}</div>`).join('')||'<div class="cats">Sem sugestões ainda — use a aba Planejar.</div>'}</div>
       <input class="tema-sel" id="recLivre" placeholder="✍️ ou grave outra ideia…" value="${esc(sel.t&&!sel.sug.includes(sel.t)?sel.t:'')}">
-      ${sel.st>=1?`<div class="cats">● Este dia já está marcado como ${STATUS[sel.st].toLowerCase()}.</div>`:''}
+      ${sel.st>=1?`<div class="cats" style="color:#4ade80">● Gravada${sel.st>1?` — status atual: ${STATUS[sel.st].toLowerCase()}`:''}.</div>`:''}
+      ${videoBlock}
       <div class="actions">
-        <button class="act draw" id="recDone" ${sel.t?'':'disabled title="Escolha uma sugestão"'}>✅ Gravei essa</button>
+        <button class="act draw" id="recDone" ${sel.t?'':'disabled title="Escolha uma sugestão"'}>${sel.st>=1?'✓ Gravada':'✅ Gravei essa'}</button>
       </div>`;
     panel.innerHTML=`<div class="mode">${dd}/${mm} · ${md==='rec'?'gravação':'planejamento'}</div>
       ${tabs}${md==='rec'?recBody:planBody}`;
@@ -868,16 +877,17 @@ function dayPanel(k,mode){
       const lv=panel.querySelector('#dpLivre');
       if(lv&&lv.value.trim()&&!sel.sug.includes(lv.value.trim()))sel.sug=[...sel.sug,lv.value.trim()];
       persist({by:S.user||sel.by});close();renderCal();renderAlert()};
+    const vd=panel.querySelector('#dpVideo'); if(vd)vd.onchange=()=>{sel.video=vd.value.trim();persist();renderCal();render()};
     const dn=panel.querySelector('#recDone'); if(dn)dn.onclick=()=>{
       const rl=panel.querySelector('#recLivre'); if(rl&&rl.value.trim())sel.t=rl.value.trim();
       if(!sel.t)return;
-      sel.st=Math.max(sel.st,1);persist();close();renderCal();renderAlert()};
+      sel.st=Math.max(sel.st,1);persist();renderCal();renderAlert();render()};
     const cl=panel.querySelector('#dpClear'); if(cl)cl.onclick=()=>{
       if(!confirm('Apagar o planejamento deste dia?'))return;
       delete S.days[k];save();close();renderCal();renderAlert()};
   };
   const close=()=>{scrim.remove();panel.remove()};
-  scrim.onclick=()=>{if(JSON.stringify(sel)!==init&&!confirm('Fechar sem salvar as mudanças?'))return;close()};
+  scrim.onclick=()=>{if(JSON.stringify(sel)!==clean&&!confirm('Fechar sem salvar as mudanças?'))return;close()};
   document.body.append(scrim,panel);
   render();
 }
