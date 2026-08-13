@@ -19,6 +19,7 @@
     font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.09em;font-size:13px;
     color:var(--text);cursor:pointer;display:flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap;flex:0 0 auto}
   .cal-btn.on{border-color:var(--ember);color:var(--ember);box-shadow:0 0 0 1px var(--ember)}
+  @media(max-width:470px){header{flex-wrap:wrap;row-gap:10px}}
   .stats{margin:2px 0 10px}
   .brand{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.2em;font-size:15px}
   .brand em{color:var(--ember);font-style:normal}
@@ -113,7 +114,8 @@
   .cal-legend .lg b{color:var(--text);font-family:var(--disp);text-transform:uppercase;letter-spacing:.07em;font-size:12.5px;font-weight:700}
   /* painel do dia */
   .day-panel{position:fixed;inset:auto 0 0 0;background:var(--card2);border-top:1px solid var(--line);
-    border-radius:18px 18px 0 0;padding:26px 22px 34px;z-index:60;max-width:640px;margin:0 auto}
+    border-radius:18px 18px 0 0;padding:26px 22px 34px;z-index:60;max-width:640px;margin:0 auto;
+    max-height:86vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
   .day-panel .mode{margin-bottom:4px}
   .day-panel h3{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:23px;letter-spacing:.03em;margin-bottom:4px}
   .day-panel .cats{color:var(--muted);font-size:13px;margin-bottom:14px}
@@ -449,13 +451,13 @@ const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agos
 
 // Pilares oficiais (sistema do Fabiano) + conexão com categorias de ignição
 const PILARES={
-  time:{n:'Gestão de Time',c:'#2dd4bf',cats:['per','ten','tri']},
-  pes:{n:'Gestão de Pessoas',c:'#fbbf24',cats:['per','ceo','ten']},
-  uni:{n:'Unity',c:'#60a5fa',cats:['per','tri','mar']},
-  van:{n:'Vanderle.IA',c:'#c084fc',cats:['tes','tem']},
-  aut:{n:'Autoridade & Eventos',c:'#fb7185',cats:['ceo','mar','tes','tem']},
-  vida:{n:'Vida Real',c:'#4ade80',cats:['pov','col']},
-  ins:{n:'Insight da Semana',c:'#facc15',cats:['sto','liv','tri']}
+  time:{n:'Gestão de Time',s:'Time',c:'#2dd4bf',cats:['per','ten','tri']},
+  pes:{n:'Gestão de Pessoas',s:'Pessoas',c:'#fbbf24',cats:['per','ceo','ten']},
+  uni:{n:'Unity',s:'Unity',c:'#60a5fa',cats:['per','tri','mar']},
+  van:{n:'Vanderle.IA',s:'Vand.IA',c:'#c084fc',cats:['tes','tem']},
+  aut:{n:'Autoridade & Eventos',s:'Autoridade',c:'#fb7185',cats:['ceo','mar','tes','tem']},
+  vida:{n:'Vida Real',s:'Vida real',c:'#4ade80',cats:['pov','col']},
+  ins:{n:'Insight da Semana',s:'Insight',c:'#facc15',cats:['sto','liv','tri']}
 };
 // Banco de ideias por pilar — gerado pela IA do projeto (rev. 2026-08-11).
 // Amplo por design: ideias, não roteiros. Cada item: [pilar, tipo ('t'=tema | 'i'=ignição), texto]
@@ -594,7 +596,7 @@ function renderChips(){
   chipsEl.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{filter=b.dataset.c||null;renderChips();view==='draw'?draw():renderList();});
 }
 function stats(){
-  statsEl.textContent=`${pool().length} disponíveis · ${S.used.length} gravadas`;
+  statsEl.textContent=`${pool().length} disponíveis · ${S.used.length} gravada${S.used.length===1?'':'s'}`;
   $('btnUsed').textContent=S.used.includes(cur)?'↩ Desmarcar':'✓ Gravei';
   $('btnFav').textContent=S.fav.includes(cur)?'★':'☆';
   $('btnFav').classList.toggle('toggled',S.fav.includes(cur));
@@ -621,9 +623,9 @@ function renderList(){
   if(S.ideas.length&&!filter){
     h+=`<div class="group-h" style="color:#4ade80">💡 Ideias do time<small>${S.ideas.length}</small></div><div class="rows">`;
     S.ideas.forEach((id,ix)=>{
-      h+=`<div class="row" style="border-left-color:#4ade80" data-idea="${ix}" tabindex="0">
-        <div class="body"><p>${esc(id.txt)}</p><div class="by">por ${id.by} · ${id.dt}${id.cat?` · sugerida para ${CATS[id.cat]?CATS[id.cat].n:id.cat}`:''}</div></div>
-        <span class="m">✕</span></div>`;
+      h+=`<div class="row" style="border-left-color:#4ade80" tabindex="0">
+        <div class="body"><p>${esc(id.txt)}</p><div class="by">por ${esc(id.by)} · ${esc(id.dt)}${id.cat?` · sugerida para ${CATS[id.cat]?CATS[id.cat].n:esc(id.cat)}`:''}</div></div>
+        <span class="m" data-del="${ix}" style="cursor:pointer;padding:4px 6px">✕</span></div>`;
     });
     h+=`</div>`;
   }
@@ -642,8 +644,9 @@ function renderList(){
   }
   listEl.innerHTML=h||'<div class="empty">Nada aqui.</div>';
   listEl.querySelectorAll('.row[data-i]').forEach(r=>r.onclick=()=>{cur=+r.dataset.i;setView('draw');cardEl.innerHTML=cardHTML(cur,false);stats();});
-  listEl.querySelectorAll('.row[data-idea]').forEach(r=>r.onclick=()=>{
-    if(confirm('Remover esta ideia?')){S.ideas.splice(+r.dataset.idea,1);save();renderList();}
+  listEl.querySelectorAll('[data-del]').forEach(s=>s.onclick=e=>{
+    e.stopPropagation();
+    if(confirm('Remover esta ideia?')){S.ideas.splice(+s.dataset.del,1);save();renderList();}
   });
 }
 function setView(v){
@@ -677,6 +680,11 @@ function renderCal(){
     <div class="actions" style="margin:0 0 16px">
       <button class="act draw" id="wizBtn">📋 Planejar a semana</button>
     </div>
+    <div class="actions" style="margin:-6px 0 6px">
+      <button class="act" id="shareBtn">📤 Enviar agenda</button>
+      <button class="act" id="recvBtn">📥 Receber</button>
+    </div>
+    <p class="hint" style="margin:0 0 16px;text-align:left">A agenda fica salva <b>neste navegador</b>. Pra ver o que o time preencheu: peça um 📤 e toque em 📥 Receber. Abra sempre pelo Safari/Chrome — <b>não pelo navegador de dentro do WhatsApp</b>.</p>
     <div class="cal-grid">`;
   for(const w of ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'])h+=`<div class="cal-wd">${w}</div>`;
   for(let i=0;i<start;i++)h+=`<div></div>`;
@@ -684,7 +692,7 @@ function renderCal(){
     const dt=new Date(y,m,d), k=iso(dt), a=S.days[k], dow=dt.getDay(), wk=(dow===0||dow===6);
     const pil=a&&a.p?PILARES[a.p]:null;
     const nSug=a&&a.sug?a.sug.length:0;
-    const label=a&&a.t?a.t:(nSug?`💡 ${nSug} ideia${nSug>1?'s':''}`:(pil?pil.n:(wk?'Livre · stories':'—')));
+    const label=a&&a.t?a.t:(nSug&&pil?`${pil.s} · ${nSug}💡`:(pil?pil.n:(wk?'Livre · stories':'—')));
     const stch=a&&a.st>=0?['◇','●','◆','✓'][a.st]:'';
     h+=`<div class="cal-d ${wk&&!a?'free':''} ${k===today?'today':''} ${a&&a.st===3?'done':''}" data-k="${k}"
       ${pil?`style="border-left:3px solid ${pil.c}"`:''}>
@@ -700,6 +708,8 @@ function renderCal(){
   $('calPrev').onclick=()=>{calRef=new Date(y,m-1,1);renderCal()};
   $('calNext').onclick=()=>{calRef=new Date(y,m+1,1);renderCal()};
   $('wizBtn').onclick=planWeek;
+  $('shareBtn').onclick=shareAgenda;
+  $('recvBtn').onclick=receiveAgenda;
   $('cal').querySelectorAll('.cal-d').forEach(el=>el.onclick=()=>dayPanel(el.dataset.k));
 }
 // Banco de ideias: sorteia mix de temas (💡) e ignições (🔥) escritos para o pilar
@@ -725,7 +735,8 @@ function planWeek(){
   const nextMon=new Date(mon); nextMon.setDate(mon.getDate()+7);
   const wiz=document.createElement('div');wiz.className='wiz';
   document.body.appendChild(wiz);
-  const closeWiz=()=>wiz.remove();
+  const kill=()=>wiz.remove();
+  const closeWiz=()=>{if(plano.some(p=>p&&p.p)&&!confirm('Sair sem salvar a semana montada?'))return;kill()};
   const DIAS=['Segunda','Terça','Quarta','Quinta','Sexta'];
   let base=null, plano=[], step=-1;
 
@@ -765,9 +776,10 @@ function planWeek(){
           <button class="act" id="wz-pular" style="flex:.5">Pular dia</button></div>
       </div>`;
       wiz.querySelector('#wz-x').onclick=closeWiz;
-      wiz.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];paint()});
-      const ms=wiz.querySelector('#wz-mais'); if(ms)ms.onclick=()=>{let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);paint()};
-      wiz.querySelectorAll('.sug[data-j]').forEach(s=>s.onclick=()=>{
+      const keepLivre=()=>{const lv0=wiz.querySelector('#wz-livre');if(lv0){const v0=lv0.value.trim();if(v0&&!sel.sug.includes(v0))sel.sug=[...sel.sug,v0]}};
+      wiz.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{keepLivre();sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];paint()});
+      const ms=wiz.querySelector('#wz-mais'); if(ms)ms.onclick=()=>{keepLivre();let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);paint()};
+      wiz.querySelectorAll('.sug[data-j]').forEach(s=>s.onclick=()=>{keepLivre();
         const tx=IDEIAS[+s.dataset.j][2];
         sel.sug=sel.sug.includes(tx)?sel.sug.filter(x=>x!==tx):[...sel.sug,tx];paint()});
       wiz.querySelectorAll('.sug[data-rm]').forEach(s=>s.onclick=()=>{
@@ -793,7 +805,7 @@ function planWeek(){
     wiz.querySelector('#wz-save').onclick=()=>{
       plano.forEach(p=>{if(p&&p.p){const old=S.days[p.k]||{};
         S.days[p.k]={...old,p:p.p,sug:p.sug||[],st:old.st!==undefined?old.st:0,t:old.st>=1?old.t:'',by:S.user||old.by||null};}});
-      save();closeWiz();renderCal();renderAlert();
+      save();kill();renderCal();renderAlert();
     };
   };
   start();
@@ -801,7 +813,7 @@ function planWeek(){
 function dayPanel(k,mode){
   const a=S.days[k]||{};
   let sel={p:a.p||null,sug:(a.sug||(a.t?[a.t]:[])).slice(),t:a.t||'',st:a.st!==undefined?a.st:0,by:a.by||null,video:a.video||''};
-  let md=mode||'plan';
+  let md=mode||((S.user==='PH'&&sel.p&&sel.sug.length&&sel.st===0)?'rec':'plan');
   let clean=JSON.stringify(sel);
   const [yy,mm,dd]=k.split('-');
   const scrim=document.createElement('div');scrim.className='scrim';
@@ -818,9 +830,11 @@ function dayPanel(k,mode){
       <div class="cats">📹 Vídeo do card${vlink?` — <a href="${esc(sel.video)}" target="_blank" rel="noopener" style="color:var(--ember)">▶ abrir no Drive</a>`:sel.video?` — ⚠️ cole a URL completa (https://…)`:` — suba no Drive e cole o link aqui:`}</div>
       ${driveUrl()?`<div style="margin:-4px 0 8px"><a href="${esc(driveUrl())}" target="_blank" rel="noopener" class="wiz-skip">📁 Abrir pasta do Drive</a></div>`:''}
       <input class="tema-sel" id="dpVideo" placeholder="🔗 cole o link do vídeo no Drive…" value="${esc(sel.video||'')}">`:'';
-    const tabs=`<div class="st-row">
+    const tabs=`<div class="wiz-top" style="margin-bottom:6px"><div class="mode" style="margin:0">${dd}/${mm} · ${md==='rec'?'gravação':'planejamento'}</div>
+      <button class="focus-close" id="dpX" style="position:static" aria-label="Fechar">✕</button></div>
+      <div class="st-row">
       <button class="st-b ${md==='plan'?'on':''}" id="dpTabPlan">📝 Planejar</button>
-      <button class="st-b ${md==='rec'?'on':''}" id="dpTabRec" ${hasPlan?'':'disabled title="Planeje o dia primeiro"'}>🎬 Gravar</button></div>`;
+      <button class="st-b ${md==='rec'?'on':''}" id="dpTabRec" style="${hasPlan?'':'opacity:.45'}">🎬 Gravar</button></div>`;
     const planBody=`
       <div class="pilar-row">${Object.entries(PILARES).map(([key,p])=>
         `<button class="pilar-b ${sel.p===key?'on':''}" data-p="${key}"
@@ -841,22 +855,25 @@ function dayPanel(k,mode){
         <button class="act" id="dpClear" style="flex:.6">🗑</button>
       </div>`:`<div class="cats">Escolha o pilar do dia para planejar.</div>`}`;
     const recBody=`
-      ${pil?`<div class="cats" style="color:${pil.c};font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-weight:700">${pil.n}${sel.by?` · agenda por ${sel.by}`:''}</div>`:''}
+      ${pil?`<div class="cats" style="color:${pil.c};font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-weight:700">${pil.n}${sel.by?` · agenda por ${esc(sel.by)}`:''}</div>`:''}
       <div class="cats">🎬 Sugestões pra gravar — escolha uma:</div>
       <div>${sel.sug.map((s,ix)=>`<div class="sug ${sel.t===s?'on':''}" data-pk="${ix}">${sel.t===s?'🎥 ':''}${esc(s)}</div>`).join('')||'<div class="cats">Sem sugestões ainda — use a aba Planejar.</div>'}</div>
       <input class="tema-sel" id="recLivre" placeholder="✍️ ou grave outra ideia…" value="${esc(sel.t&&!sel.sug.includes(sel.t)?sel.t:'')}">
       ${sel.st>=1?`<div class="cats" style="color:#4ade80">● Gravada${sel.st>1?` — status atual: ${STATUS[sel.st].toLowerCase()}`:''}.</div>`:''}
       ${videoBlock}
       <div class="actions">
-        <button class="act draw" id="recDone" ${sel.t?'':'disabled title="Escolha uma sugestão"'}>${sel.st>=1?'✓ Gravada':'✅ Gravei essa'}</button>
+        <button class="act draw" id="recDone" style="${sel.t?'':'opacity:.5'}">${sel.st>=1?'✓ Gravada':'✅ Gravei essa'}</button>
       </div>`;
-    panel.innerHTML=`<div class="mode">${dd}/${mm} · ${md==='rec'?'gravação':'planejamento'}</div>
-      ${tabs}${md==='rec'?recBody:planBody}`;
-    const tp=panel.querySelector('#dpTabPlan'); if(tp)tp.onclick=()=>{md='plan';render()};
-    const tr=panel.querySelector('#dpTabRec'); if(tr)tr.onclick=()=>{if(hasPlan){md='rec';render()}};
-    panel.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];render()});
-    const ms=panel.querySelector('#dpMais'); if(ms)ms.onclick=()=>{let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);render()};
-    panel.querySelectorAll('.sug[data-j]').forEach(s=>s.onclick=()=>{
+    panel.innerHTML=`${tabs}${md==='rec'?recBody:planBody}`;
+    const px=panel.querySelector('#dpX'); if(px)px.onclick=()=>{if(JSON.stringify(sel)!==clean&&!confirm('Fechar sem salvar as mudanças?'))return;close()};
+    const keepLivre=()=>{const lv0=panel.querySelector('#dpLivre');if(lv0){const v0=lv0.value.trim();if(v0&&!sel.sug.includes(v0))sel.sug=[...sel.sug,v0]}};
+    const tp=panel.querySelector('#dpTabPlan'); if(tp)tp.onclick=()=>{keepLivre();md='plan';render()};
+    const tr=panel.querySelector('#dpTabRec'); if(tr)tr.onclick=()=>{
+      if(!hasPlan){alert('Planeje o dia primeiro: escolha o pilar e marque sugestões.');return}
+      keepLivre();md='rec';render()};
+    panel.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{keepLivre();sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];render()});
+    const ms=panel.querySelector('#dpMais'); if(ms)ms.onclick=()=>{keepLivre();let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);render()};
+    panel.querySelectorAll('.sug[data-j]').forEach(s=>s.onclick=()=>{keepLivre();
       const tx=IDEIAS[+s.dataset.j][2];
       sel.sug=sel.sug.includes(tx)?sel.sug.filter(x=>x!==tx):[...sel.sug,tx];render()});
     panel.querySelectorAll('.sug[data-rm]').forEach(s=>s.onclick=()=>{
@@ -881,7 +898,7 @@ function dayPanel(k,mode){
     const vd=panel.querySelector('#dpVideo'); if(vd)vd.onchange=()=>{sel.video=vd.value.trim();persist();renderCal();render()};
     const dn=panel.querySelector('#recDone'); if(dn)dn.onclick=()=>{
       const rl=panel.querySelector('#recLivre'); if(rl&&rl.value.trim())sel.t=rl.value.trim();
-      if(!sel.t)return;
+      if(!sel.t){alert('Escolha uma sugestão (ou escreva a sua) antes de marcar como gravada.');return}
       sel.st=Math.max(sel.st,1);persist();renderCal();renderAlert();render()};
     const cl=panel.querySelector('#dpClear'); if(cl)cl.onclick=()=>{
       if(!confirm('Apagar o planejamento deste dia?'))return;
@@ -891,6 +908,79 @@ function dayPanel(k,mode){
   scrim.onclick=()=>{if(JSON.stringify(sel)!==clean&&!confirm('Fechar sem salvar as mudanças?'))return;close()};
   document.body.append(scrim,panel);
   render();
+}
+// Compartilhar agenda entre aparelhos (sem servidor): código copiado → WhatsApp → colado no outro aparelho
+const AG_PREFIX='IGNICAO1:';
+const buildShareMsg=()=>'Agenda da Ignição · PH — abra a plataforma, toque em 📥 Receber (no Calendário) e cole esta mensagem inteira:\n\n'
+  +AG_PREFIX+btoa(unescape(encodeURIComponent(JSON.stringify({days:S.days,ideas:S.ideas,used:S.used,fav:S.fav}))));
+function syncModal(mode){
+  const scrim=document.createElement('div');scrim.className='scrim';
+  const md=document.createElement('div');md.className='idea-modal';
+  md.innerHTML=mode==='send'
+    ?`<h3>📤 Enviar agenda</h3><p class="cats" style="color:var(--muted);font-size:13px;margin-bottom:10px">Copie e mande no WhatsApp do time. No outro aparelho: Calendário → 📥 Receber → colar.</p>
+      <textarea id="syncTxt" readonly>${esc(buildShareMsg())}</textarea>
+      <div class="actions"><button class="act draw" id="syncCopy">Copiar</button><button class="act" id="syncClose" style="flex:.5">Fechar</button></div>`
+    :`<h3>📥 Receber agenda</h3><p class="cats" style="color:var(--muted);font-size:13px;margin-bottom:10px">Cole aqui a mensagem recebida (com o código IGNICAO1:…). Nada do que já está mais adiantado neste aparelho é apagado.</p>
+      <textarea id="syncTxt" placeholder="IGNICAO1:…"></textarea>
+      <div class="actions"><button class="act draw" id="syncOk">Receber</button><button class="act" id="syncClose" style="flex:.5">Fechar</button></div>`;
+  const close=()=>{scrim.remove();md.remove()};
+  scrim.onclick=close;
+  document.body.append(scrim,md);
+  md.querySelector('#syncClose').onclick=close;
+  const cp=md.querySelector('#syncCopy'); if(cp)cp.onclick=()=>{
+    const ta=md.querySelector('#syncTxt');ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);
+    const ok=()=>{cp.textContent='Copiado ✅'};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).then(ok,()=>{document.execCommand('copy');ok()});
+    else{document.execCommand('copy');ok()}
+  };
+  const okb=md.querySelector('#syncOk'); if(okb)okb.onclick=()=>{const v=md.querySelector('#syncTxt').value;close();importAgenda(v)};
+}
+function shareAgenda(){
+  // share nativo só no celular (abre o WhatsApp direto); no computador, modal de copiar
+  if(navigator.share&&(navigator.maxTouchPoints>0||'ontouchstart' in window)){navigator.share({text:buildShareMsg()}).catch(()=>{});return}
+  syncModal('send');
+}
+function receiveAgenda(){syncModal('recv')}
+function sanitizeDay(d){
+  if(!d||typeof d!=='object'||!PILARES[d.p])return null;
+  const st=Math.min(3,Math.max(0,parseInt(d.st,10)||0));
+  const sug=Array.isArray(d.sug)?d.sug.filter(s=>typeof s==='string'&&s.trim()).map(s=>s.trim()).slice(0,20):[];
+  return {p:d.p,st,sug,t:typeof d.t==='string'?d.t:'',by:typeof d.by==='string'?d.by.slice(0,40):null,video:typeof d.video==='string'?d.video:''};
+}
+function importAgenda(v){
+  if(!v||!v.trim())return;
+  const m=v.replace(/\s+/g,'').match(/IGNICAO1:[A-Za-z0-9+/=]+/);
+  if(!m){alert('Código não reconhecido — copie a mensagem INTEIRA (o WhatsApp corta com "ler mais").');return}
+  let data;
+  try{data=JSON.parse(decodeURIComponent(escape(atob(m[0].slice(AG_PREFIX.length)))))}
+  catch(e){alert('Código inválido ou incompleto — copie a mensagem inteira e tente de novo.');return}
+  // dias: união campo a campo — nunca apaga o que está mais adiantado ou preenchido aqui
+  const merged={...S.days};
+  let upd=0;
+  for(const k of Object.keys(data.days||{})){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(k))continue;
+    const inc=sanitizeDay(data.days[k]); if(!inc)continue;
+    const loc=S.days[k];
+    if(!loc){merged[k]=inc;upd++;continue}
+    const nd={...loc,
+      p:(inc.st>(loc.st||0)?inc.p:loc.p||inc.p),
+      st:Math.max(loc.st||0,inc.st),
+      sug:[...(loc.sug||[]),...inc.sug.filter(s=>!(loc.sug||[]).includes(s))],
+      t:loc.t||inc.t, video:loc.video||inc.video, by:loc.by||inc.by};
+    if(JSON.stringify(nd)!==JSON.stringify(loc)){merged[k]=nd;upd++;}
+  }
+  const have=new Set(S.ideas.map(i=>i.txt));
+  const novasIdeias=(Array.isArray(data.ideas)?data.ideas:[])
+    .filter(i=>i&&typeof i.txt==='string'&&i.txt.trim()&&!have.has(i.txt))
+    .map(i=>({txt:i.txt,cat:CATS[i.cat]?i.cat:null,by:typeof i.by==='string'?i.by.slice(0,40):'?',dt:typeof i.dt==='string'?i.dt.slice(0,10):''}));
+  if(!upd&&!novasIdeias.length){alert('Nada novo para receber — os dois aparelhos já estão iguais (ou este está mais adiantado).');return}
+  if(!confirm(`Receber atualização de ${upd} dia${upd!==1?'s':''}${novasIdeias.length?` + ${novasIdeias.length} ideia${novasIdeias.length>1?'s':''} do time`:''}?`))return;
+  S.days=merged;
+  S.ideas=[...novasIdeias,...S.ideas];
+  if(Array.isArray(data.used))S.used=[...new Set([...S.used,...data.used.filter(n=>Number.isInteger(n)&&n>=0&&n<DATA.length)])];
+  if(Array.isArray(data.fav))S.fav=[...new Set([...S.fav,...data.fav.filter(n=>Number.isInteger(n)&&n>=0&&n<DATA.length)])];
+  save();renderCal();renderAlert();stats();
+  alert('Agenda recebida! ✅');
 }
 // Acesso ao Drive: usa o link oficial (DRIVE_URL) ou o configurado neste aparelho (S.drive)
 const driveUrl=()=>DRIVE_URL||S.drive||'';
@@ -906,13 +996,21 @@ $('btnDrive').onclick=()=>{
 // Alerta: hoje tem conteúdo planejado pra gravar
 function renderAlert(){
   const el=$('alert'); if(!el)return;
-  const k=iso(new Date()), a=S.days[k];
-  const n=a&&a.sug?a.sug.length:(a&&a.t?1:0);
-  if(a&&a.p&&a.st===0&&n){
-    el.innerHTML=`<div class="alertbar"><div class="tx">🎬 <b>Hoje tem gravação</b> · ${PILARES[a.p].n} — ${n} sugest${n>1?'ões':'ão'}${a.by?` de ${a.by}`:''}</div>
-      <button class="act draw" id="alertGo" style="flex:0 0 auto;padding:10px 14px;font-size:12px">Escolher e gravar</button></div>`;
-    $('alertGo').onclick=()=>dayPanel(k,'rec');
-  } else el.innerHTML='';
+  const now=new Date(), dow=now.getDay()||7, mon=new Date(now); mon.setDate(now.getDate()-(dow-1));
+  const hoje=iso(now), DIAS3=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const pend=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(mon); d.setDate(mon.getDate()+i);
+    const k=iso(d); if(k>hoje)break;
+    const a=S.days[k], n=a&&a.sug?a.sug.length:(a&&a.t?1:0);
+    if(a&&a.p&&a.st===0&&n)pend.push({k,a,hoje:k===hoje,dia:DIAS3[d.getDay()]});
+  }
+  if(!pend.length){el.innerHTML='';return}
+  const first=pend.find(p=>p.hoje)||pend[0];
+  const label=pend.map(p=>`${p.hoje?'Hoje':p.dia} (${PILARES[p.a.p].n})`).join(' · ');
+  el.innerHTML=`<div class="alertbar"><div class="tx">🎬 <b>Pra gravar:</b> ${esc(label)}</div>
+    <button class="act draw" id="alertGo" style="flex:0 0 auto;padding:10px 14px;font-size:12px">Escolher e gravar</button></div>`;
+  $('alertGo').onclick=()=>dayPanel(first.k,'rec');
 }
 $('btnDraw').onclick=draw;
 $('btnUsed').onclick=()=>{if(cur<0)return;S.used.includes(cur)?S.used=S.used.filter(x=>x!==cur):S.used.push(cur);save();stats();};
@@ -966,5 +1064,21 @@ arrow.onclick=()=>chipsEl.scrollBy({left:200});
 const arrowCheck=()=>arrow.classList.toggle('off',chipsEl.scrollLeft>=chipsEl.scrollWidth-chipsEl.clientWidth-8);
 chipsEl.addEventListener('scroll',arrowCheck);
 addEventListener('resize',arrowCheck);
-renderChips();draw();setView('all');arrowCheck();pickUser(false);renderAlert();
+// Outra aba/janela salvou? Recarrega o estado em vez de sobrescrever com dados velhos (last-write-wins)
+function reloadState(raw){
+  try{S=JSON.parse(raw||localStorage.getItem(K)||'{"used":[],"fav":[]}')}catch(e){return}
+  S.days=S.days||{};for(const k in S.days){if(S.days[k]===true)S.days[k]={st:1}}
+  S.ideas=S.ideas||[];S.used=S.used||[];S.fav=S.fav||[];S.user=S.user||null;
+  if(view==='cal')renderCal();else if(view==='all')renderList();
+  stats();renderAlert();
+}
+addEventListener('storage',e=>{if(e.key===K)reloadState(e.newValue)});
+addEventListener('pageshow',e=>{if(e.persisted)reloadState()});
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+renderChips();draw();arrowCheck();pickUser(false);renderAlert();
+// Semana ativa? Abre direto na agenda — é o que o time vem consultar
+(()=>{const now=new Date(),dow=now.getDay()||7,mon=new Date(now);mon.setDate(now.getDate()-(dow-1));
+  for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);
+    if(S.days[iso(d)]){setView('cal');return}}
+  setView('all');})();
 </script>
