@@ -577,6 +577,7 @@ let S=JSON.parse(localStorage.getItem(K)||'{"used":[],"fav":[]}');
 S.days=S.days||{};
 for(const k in S.days){if(S.days[k]===true)S.days[k]={st:1}}
 S.ideas=S.ideas||[];
+S.del=S.del||[];
 S.user=S.user||null;
 const save=()=>localStorage.setItem(K,JSON.stringify(S));
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -677,14 +678,10 @@ function renderCal(){
   let h=`<div class="cal-head"><h2>${MESES[m]} ${y}</h2>
     <div class="cal-nav"><button id="calPrev" aria-label="Mês anterior">‹</button><button id="calNext" aria-label="Próximo mês">›</button></div></div>
     <div class="cal-streak">Esta semana: <b>${weekScore()}/5 gravações</b> · reserva: <b>${reserva()} prontos</b></div>
-    <div class="actions" style="margin:0 0 16px">
+    ${canEdit()?`<div class="actions" style="margin:0 0 10px">
       <button class="act draw" id="wizBtn">📋 Planejar a semana</button>
-    </div>
-    <div class="actions" style="margin:-6px 0 6px">
-      <button class="act" id="shareBtn">📤 Enviar agenda</button>
-      <button class="act" id="recvBtn">📥 Receber</button>
-    </div>
-    <p class="hint" style="margin:0 0 16px;text-align:left">A agenda fica salva <b>neste navegador</b>. Pra ver o que o time preencheu: peça um 📤 e toque em 📥 Receber. Abra sempre pelo Safari/Chrome — <b>não pelo navegador de dentro do WhatsApp</b>.</p>
+    </div>`:''}
+    <div class="cal-streak" id="syncBar" style="margin-bottom:14px">${syncBarHTML()}</div>
     <div class="cal-grid">`;
   for(const w of ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'])h+=`<div class="cal-wd">${w}</div>`;
   for(let i=0;i<start;i++)h+=`<div></div>`;
@@ -707,9 +704,8 @@ function renderCal(){
   $('cal').innerHTML=h;
   $('calPrev').onclick=()=>{calRef=new Date(y,m-1,1);renderCal()};
   $('calNext').onclick=()=>{calRef=new Date(y,m+1,1);renderCal()};
-  $('wizBtn').onclick=planWeek;
-  $('shareBtn').onclick=shareAgenda;
-  $('recvBtn').onclick=receiveAgenda;
+  const wb=$('wizBtn'); if(wb)wb.onclick=planWeek;
+  wireSyncBar();
   $('cal').querySelectorAll('.cal-d').forEach(el=>el.onclick=()=>dayPanel(el.dataset.k));
 }
 // Banco de ideias: sorteia mix de temas (💡) e ignições (🔥) escritos para o pilar
@@ -805,7 +801,7 @@ function planWeek(){
     wiz.querySelector('#wz-save').onclick=()=>{
       plano.forEach(p=>{if(p&&p.p){const old=S.days[p.k]||{};
         S.days[p.k]={...old,p:p.p,sug:p.sug||[],st:old.st!==undefined?old.st:0,t:old.st>=1?old.t:'',by:S.user||old.by||null};}});
-      save();kill();renderCal();renderAlert();
+      save();publicar();kill();renderCal();renderAlert();
     };
   };
   start();
@@ -820,8 +816,20 @@ function dayPanel(k,mode){
   const panel=document.createElement('div');panel.className='day-panel';
   let bank=[], excl=[];
   if(sel.p){bank=bancoIdeias(sel.p,4,[]);excl=[...bank];}
-  const persist=extra=>{S.days[k]={...a,p:sel.p,sug:sel.sug,t:sel.t,st:sel.st,by:sel.by,video:sel.video,...(extra||{})};save();clean=JSON.stringify(sel);};
+  const persist=extra=>{S.days[k]={...a,p:sel.p,sug:sel.sug,t:sel.t,st:sel.st,by:sel.by,video:sel.video,...(extra||{})};save();clean=JSON.stringify(sel);publicar();};
   const render=()=>{
+    if(!canEdit()){ // modo leitura: quem edita a agenda oficial é quem tem a 🔑
+      const pilRO=sel.p?PILARES[sel.p]:null;
+      panel.innerHTML=`<div class="wiz-top" style="margin-bottom:6px"><div class="mode" style="margin:0">${dd}/${mm} · agenda</div>
+        <button class="focus-close" id="dpX" style="position:static" aria-label="Fechar">✕</button></div>
+        ${pilRO?`<div class="cats" style="color:${pilRO.c};font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-weight:700">${pilRO.n}${sel.by?` · agenda por ${esc(sel.by)}`:''}</div>`:'<div class="cats">Dia livre — nada planejado.</div>'}
+        ${sel.t?`<div class="cats">🎥 Ideia do dia: <b>${esc(sel.t)}</b></div>`:''}
+        ${sel.sug.length?`<div class="cats">Sugestões do dia:</div><div>${sel.sug.map(s=>`<div class="sug" style="cursor:default">${esc(s)}</div>`).join('')}</div>`:''}
+        ${pilRO?`<div class="cats">Status: ${STATUS[sel.st]||'—'}${sel.video&&/^https?:\/\//.test(sel.video)?` · <a href="${esc(sel.video)}" target="_blank" rel="noopener" style="color:var(--ember)">📹 abrir vídeo</a>`:''}</div>`:''}
+        <p class="hint" style="text-align:left;margin-top:10px">👁 Modo leitura — a agenda oficial é editada por quem tem a 🔑 (botão no Calendário).</p>`;
+      panel.querySelector('#dpX').onclick=close;
+      return;
+    }
     const pil=sel.p?PILARES[sel.p]:null;
     const hasPlan=!!(sel.p&&sel.sug.length);
     const outras=sel.sug.filter(s=>!bank.some(j=>IDEIAS[j][2]===s));
@@ -901,86 +909,159 @@ function dayPanel(k,mode){
       if(!sel.t){alert('Escolha uma sugestão (ou escreva a sua) antes de marcar como gravada.');return}
       sel.st=Math.max(sel.st,1);persist();renderCal();renderAlert();render()};
     const cl=panel.querySelector('#dpClear'); if(cl)cl.onclick=()=>{
-      if(!confirm('Apagar o planejamento deste dia?'))return;
-      delete S.days[k];save();close();renderCal();renderAlert()};
+      if(!confirm('Apagar o planejamento deste dia? (some da agenda oficial de todo mundo)'))return;
+      delete S.days[k];(S.del=S.del||[]).push(k);save();publicar();close();renderCal();renderAlert()};
   };
   const close=()=>{scrim.remove();panel.remove()};
   scrim.onclick=()=>{if(JSON.stringify(sel)!==clean&&!confirm('Fechar sem salvar as mudanças?'))return;close()};
   document.body.append(scrim,panel);
   render();
 }
-// Compartilhar agenda entre aparelhos (sem servidor): código copiado → WhatsApp → colado no outro aparelho
-const AG_PREFIX='IGNICAO1:';
-const buildShareMsg=()=>'Agenda da Ignição · PH — abra a plataforma, toque em 📥 Receber (no Calendário) e cole esta mensagem inteira:\n\n'
-  +AG_PREFIX+btoa(unescape(encodeURIComponent(JSON.stringify({days:S.days,ideas:S.ideas,used:S.used,fav:S.fav}))));
-function syncModal(mode){
-  const scrim=document.createElement('div');scrim.className='scrim';
-  const md=document.createElement('div');md.className='idea-modal';
-  md.innerHTML=mode==='send'
-    ?`<h3>📤 Enviar agenda</h3><p class="cats" style="color:var(--muted);font-size:13px;margin-bottom:10px">Copie e mande no WhatsApp do time. No outro aparelho: Calendário → 📥 Receber → colar.</p>
-      <textarea id="syncTxt" readonly>${esc(buildShareMsg())}</textarea>
-      <div class="actions"><button class="act draw" id="syncCopy">Copiar</button><button class="act" id="syncClose" style="flex:.5">Fechar</button></div>`
-    :`<h3>📥 Receber agenda</h3><p class="cats" style="color:var(--muted);font-size:13px;margin-bottom:10px">Cole aqui a mensagem recebida (com o código IGNICAO1:…). Nada do que já está mais adiantado neste aparelho é apagado.</p>
-      <textarea id="syncTxt" placeholder="IGNICAO1:…"></textarea>
-      <div class="actions"><button class="act draw" id="syncOk">Receber</button><button class="act" id="syncClose" style="flex:.5">Fechar</button></div>`;
-  const close=()=>{scrim.remove();md.remove()};
-  scrim.onclick=close;
-  document.body.append(scrim,md);
-  md.querySelector('#syncClose').onclick=close;
-  const cp=md.querySelector('#syncCopy'); if(cp)cp.onclick=()=>{
-    const ta=md.querySelector('#syncTxt');ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);
-    const ok=()=>{cp.textContent='Copiado ✅'};
-    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).then(ok,()=>{document.execCommand('copy');ok()});
-    else{document.execCommand('copy');ok()}
-  };
-  const okb=md.querySelector('#syncOk'); if(okb)okb.onclick=()=>{const v=md.querySelector('#syncTxt').value;close();importAgenda(v)};
-}
-function shareAgenda(){
-  // share nativo só no celular (abre o WhatsApp direto); no computador, modal de copiar
-  if(navigator.share&&(navigator.maxTouchPoints>0||'ontouchstart' in window)){navigator.share({text:buildShareMsg()}).catch(()=>{});return}
-  syncModal('send');
-}
-function receiveAgenda(){syncModal('recv')}
+// ————— AGENDA OFICIAL COMPARTILHADA —————
+// Fonte única: agenda.json no repositório (GitHub). Todo aparelho espelha ao abrir
+// (visualização igual pra todo mundo). Quem tem a 🔑 (Fabiano/PH) edita e publica
+// automaticamente; sem chave, o aparelho fica em modo leitura.
+const REPO_API='https://api.github.com/repos/philipe98/ignicao-ph/contents/agenda.json';
+const canEdit=()=>!!S.key;
+let syncInfo={state:'conectando…',at:null,rev:S.lastRev||0};
 function sanitizeDay(d){
   if(!d||typeof d!=='object'||!PILARES[d.p])return null;
   const st=Math.min(3,Math.max(0,parseInt(d.st,10)||0));
   const sug=Array.isArray(d.sug)?d.sug.filter(s=>typeof s==='string'&&s.trim()).map(s=>s.trim()).slice(0,20):[];
   return {p:d.p,st,sug,t:typeof d.t==='string'?d.t:'',by:typeof d.by==='string'?d.by.slice(0,40):null,video:typeof d.video==='string'?d.video:''};
 }
-function importAgenda(v){
-  if(!v||!v.trim())return;
-  const m=v.replace(/\s+/g,'').match(/IGNICAO1:[A-Za-z0-9+/=]+/);
-  if(!m){alert('Código não reconhecido — copie a mensagem INTEIRA (o WhatsApp corta com "ler mais").');return}
-  let data;
-  try{data=JSON.parse(decodeURIComponent(escape(atob(m[0].slice(AG_PREFIX.length)))))}
-  catch(e){alert('Código inválido ou incompleto — copie a mensagem inteira e tente de novo.');return}
-  // dias: união campo a campo — nunca apaga o que está mais adiantado ou preenchido aqui
-  const merged={...S.days};
-  let upd=0;
-  for(const k of Object.keys(data.days||{})){
+function sanitizeAgenda(a){
+  const out={days:{},ideas:[],rev:parseInt(a&&a.rev,10)||0,updatedAt:(a&&typeof a.updatedAt==='string')?a.updatedAt:null,by:(a&&typeof a.by==='string')?a.by.slice(0,40):null};
+  for(const k of Object.keys((a&&a.days)||{})){
     if(!/^\d{4}-\d{2}-\d{2}$/.test(k))continue;
-    const inc=sanitizeDay(data.days[k]); if(!inc)continue;
-    const loc=S.days[k];
-    if(!loc){merged[k]=inc;upd++;continue}
-    const nd={...loc,
+    const d=sanitizeDay(a.days[k]); if(d)out.days[k]=d;
+  }
+  out.ideas=(Array.isArray(a&&a.ideas)?a.ideas:[]).filter(i=>i&&typeof i.txt==='string'&&i.txt.trim())
+    .map(i=>({txt:i.txt,cat:CATS[i.cat]?i.cat:null,by:typeof i.by==='string'?i.by.slice(0,40):'?',dt:typeof i.dt==='string'?i.dt.slice(0,10):''}));
+  return out;
+}
+function mergeDays(baseDays,mineDays){ // união campo a campo — nunca perde dado
+  const out={...baseDays};
+  for(const k of Object.keys(mineDays||{})){
+    const inc=sanitizeDay(mineDays[k]); if(!inc)continue;
+    const loc=out[k];
+    if(!loc){out[k]=inc;continue}
+    out[k]={...loc,
       p:(inc.st>(loc.st||0)?inc.p:loc.p||inc.p),
       st:Math.max(loc.st||0,inc.st),
-      sug:[...(loc.sug||[]),...inc.sug.filter(s=>!(loc.sug||[]).includes(s))],
+      sug:[...(loc.sug||[]),...(inc.sug||[]).filter(s=>!(loc.sug||[]).includes(s))],
       t:loc.t||inc.t, video:loc.video||inc.video, by:loc.by||inc.by};
-    if(JSON.stringify(nd)!==JSON.stringify(loc)){merged[k]=nd;upd++;}
   }
-  const have=new Set(S.ideas.map(i=>i.txt));
-  const novasIdeias=(Array.isArray(data.ideas)?data.ideas:[])
-    .filter(i=>i&&typeof i.txt==='string'&&i.txt.trim()&&!have.has(i.txt))
-    .map(i=>({txt:i.txt,cat:CATS[i.cat]?i.cat:null,by:typeof i.by==='string'?i.by.slice(0,40):'?',dt:typeof i.dt==='string'?i.dt.slice(0,10):''}));
-  if(!upd&&!novasIdeias.length){alert('Nada novo para receber — os dois aparelhos já estão iguais (ou este está mais adiantado).');return}
-  if(!confirm(`Receber atualização de ${upd} dia${upd!==1?'s':''}${novasIdeias.length?` + ${novasIdeias.length} ideia${novasIdeias.length>1?'s':''} do time`:''}?`))return;
-  S.days=merged;
-  S.ideas=[...novasIdeias,...S.ideas];
-  if(Array.isArray(data.used))S.used=[...new Set([...S.used,...data.used.filter(n=>Number.isInteger(n)&&n>=0&&n<DATA.length)])];
-  if(Array.isArray(data.fav))S.fav=[...new Set([...S.fav,...data.fav.filter(n=>Number.isInteger(n)&&n>=0&&n<DATA.length)])];
-  save();renderCal();renderAlert();stats();
-  alert('Agenda recebida! ✅');
+  return out;
+}
+function mergeIdeas(base,mine){
+  const have=new Set(base.map(i=>i.txt));
+  return [...base,...(mine||[]).filter(i=>i&&i.txt&&!have.has(i.txt))];
+}
+async function fetchAgenda(){
+  try{
+    const h={Accept:'application/vnd.github+json'};
+    if(S.key)h.Authorization='Bearer '+S.key;
+    const r=await fetch(REPO_API,{headers:h});
+    if(!r.ok)throw 0;
+    const j=await r.json();
+    return {sha:j.sha,agenda:sanitizeAgenda(JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\s/g,''))))))};
+  }catch(e){
+    try{ // reserva: cópia servida pelo próprio site (pode atrasar 1-2 min após publicação)
+      const r2=await fetch('agenda.json?v='+Math.random());
+      if(!r2.ok)throw 0;
+      return {sha:null,agenda:sanitizeAgenda(await r2.json())};
+    }catch(_){return null}
+  }
+}
+function applyRemote(agenda){
+  if(agenda.rev<1){ // ninguém publicou ainda — mantém o local deste aparelho
+    syncInfo={state:canEdit()?'pronto — publique a 1ª agenda':'aguardando a 1ª publicação do Fabiano',at:agenda.updatedAt,rev:agenda.rev};
+    return;
+  }
+  const primeiraVez=(S.lastRev===undefined||S.lastRev===null);
+  if(!canEdit()||primeiraVez){
+    // espelho fiel: a agenda oficial é a mesma pra todo mundo
+    S.days=agenda.days;S.ideas=agenda.ideas;S.del=[];
+  }else{
+    let d2=mergeDays(agenda.days,S.days);
+    (S.del||[]).forEach(k=>delete d2[k]);
+    S.days=d2;
+    S.ideas=mergeIdeas(agenda.ideas,S.ideas);
+  }
+  S.lastRev=agenda.rev;save();
+  syncInfo={state:canEdit()?'✅ sincronizado':'👁 modo leitura · atualizado',at:agenda.updatedAt,rev:agenda.rev};
+}
+async function syncNow(){
+  const got=await fetchAgenda();
+  if(!got){syncInfo.state='sem conexão — mostrando a cópia deste aparelho';renderSyncBar();return}
+  applyRemote(got.agenda);
+  if(view==='cal')renderCal();else if(view==='all')renderList();
+  stats();renderAlert();renderSyncBar();
+}
+let pubTimer=null;
+function publicar(){if(!canEdit())return;clearTimeout(pubTimer);pubTimer=setTimeout(doPublish,800);}
+async function doPublish(retry){
+  if(!canEdit())return;
+  syncInfo.state='publicando…';renderSyncBar();
+  const got=await fetchAgenda();
+  const base=(got&&got.agenda.rev>=1)?got.agenda:{days:{},ideas:[],rev:got?got.agenda.rev:0};
+  const days=mergeDays(base.days,S.days);
+  (S.del||[]).forEach(k=>delete days[k]);
+  const ideas=mergeIdeas(base.ideas,S.ideas);
+  const rev=(base.rev||0)+1;
+  const body={message:`agenda: rev ${rev} por ${S.user||'?'}`,
+    content:btoa(unescape(encodeURIComponent(JSON.stringify({days,ideas,rev,updatedAt:new Date().toISOString(),by:S.user||null},null,1)))),
+    ...(got&&got.sha?{sha:got.sha}:{})};
+  try{
+    const r=await fetch(REPO_API,{method:'PUT',
+      headers:{Authorization:'Bearer '+S.key,Accept:'application/vnd.github+json','Content-Type':'application/json'},
+      body:JSON.stringify(body)});
+    if(r.status===409&&!retry)return doPublish(true);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    S.days=days;S.ideas=ideas;S.del=[];S.lastRev=rev;save();
+    syncInfo={state:'✅ sincronizado',at:new Date().toISOString(),rev};
+  }catch(e){
+    syncInfo.state='⚠️ falha ao publicar — mudanças guardadas neste aparelho';
+    if(/401|403|404/.test(String(e)))alert('Não consegui publicar: a chave de edição parece inválida ou sem permissão. Confira em 🔑.');
+  }
+  renderSyncBar();
+  if(view==='cal')renderCal();
+  renderAlert();
+}
+const fmtHora=iso2=>{try{const d=new Date(iso2);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}catch(e){return''}};
+function syncBarHTML(){
+  return `☁️ <b>Agenda oficial</b> · ${syncInfo.state}${syncInfo.at?` · ${fmtHora(syncInfo.at)}`:''}
+    <button class="wiz-skip" id="syncRefresh">🔄 atualizar</button>
+    <button class="wiz-skip" id="syncKey">${canEdit()?'🔑 edição ativa':'🔑 ativar edição'}</button>`;
+}
+function wireSyncBar(){
+  const r=$('syncRefresh'); if(r)r.onclick=()=>{syncInfo.state='atualizando…';renderSyncBar();syncNow()};
+  const kb=$('syncKey'); if(kb)kb.onclick=keyModal;
+}
+function renderSyncBar(){const el=$('syncBar'); if(el){el.innerHTML=syncBarHTML();wireSyncBar();}}
+function keyModal(){
+  const scrim=document.createElement('div');scrim.className='scrim';
+  const md=document.createElement('div');md.className='idea-modal';
+  md.innerHTML=`<h3>🔑 Edição da agenda oficial</h3>
+    <p class="cats" style="color:var(--muted);font-size:13px;margin-bottom:10px">${canEdit()
+      ?'Este aparelho edita e publica a agenda oficial. Você pode trocar a chave ou desativar (vira modo leitura).'
+      :'Cole a chave de edição (o Philipe gera e manda só pra quem edita — Fabiano e PH). Sem chave, este aparelho fica em modo leitura, sempre espelhando a agenda oficial.'}</p>
+    <textarea id="keyTxt" placeholder="github_pat_…" style="min-height:70px">${esc(S.key||'')}</textarea>
+    <div class="actions"><button class="act draw" id="keySave">Salvar</button>${S.key?'<button class="act" id="keyOff" style="flex:.7">Desativar</button>':''}<button class="act" id="keyClose" style="flex:.5">Fechar</button></div>`;
+  const close=()=>{scrim.remove();md.remove()};
+  scrim.onclick=close;document.body.append(scrim,md);
+  md.querySelector('#keyClose').onclick=close;
+  md.querySelector('#keySave').onclick=()=>{
+    const v=md.querySelector('#keyTxt').value.trim();
+    if(!v){alert('Cole a chave.');return}
+    S.key=v;save();close();updateEditUI();
+    syncNow().then(()=>{if(syncInfo.rev<1&&(Object.keys(S.days).length||S.ideas.length))publicar()});};
+  const off=md.querySelector('#keyOff'); if(off)off.onclick=()=>{delete S.key;save();close();updateEditUI();syncNow();};
+}
+function updateEditUI(){
+  const f=document.querySelector('.idea-fab'); if(f)f.style.display=canEdit()?'':'none';
+  if(view==='cal')renderCal();
 }
 // Acesso ao Drive: usa o link oficial (DRIVE_URL) ou o configurado neste aparelho (S.drive)
 const driveUrl=()=>DRIVE_URL||S.drive||'';
@@ -1009,7 +1090,7 @@ function renderAlert(){
   const first=pend.find(p=>p.hoje)||pend[0];
   const label=pend.map(p=>`${p.hoje?'Hoje':p.dia} (${PILARES[p.a.p].n})`).join(' · ');
   el.innerHTML=`<div class="alertbar"><div class="tx">🎬 <b>Pra gravar:</b> ${esc(label)}</div>
-    <button class="act draw" id="alertGo" style="flex:0 0 auto;padding:10px 14px;font-size:12px">Escolher e gravar</button></div>`;
+    <button class="act draw" id="alertGo" style="flex:0 0 auto;padding:10px 14px;font-size:12px">${canEdit()?'Escolher e gravar':'Ver o dia'}</button></div>`;
   $('alertGo').onclick=()=>dayPanel(first.k,'rec');
 }
 $('btnDraw').onclick=draw;
@@ -1054,10 +1135,11 @@ fab.onclick=()=>{
     if(!txt)return;
     const d=new Date();
     S.ideas.unshift({txt,cat:md.querySelector('#ideaCat').value||null,by:S.user||'?',dt:`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`});
-    save();close();setView('all');
+    save();publicar();close();setView('all');
   };
 };
 document.body.appendChild(fab);
+fab.style.display=canEdit()?'':'none';
 
 const arrow=$('chipArrow');
 arrow.onclick=()=>chipsEl.scrollBy({left:200});
@@ -1068,14 +1150,15 @@ addEventListener('resize',arrowCheck);
 function reloadState(raw){
   try{S=JSON.parse(raw||localStorage.getItem(K)||'{"used":[],"fav":[]}')}catch(e){return}
   S.days=S.days||{};for(const k in S.days){if(S.days[k]===true)S.days[k]={st:1}}
-  S.ideas=S.ideas||[];S.used=S.used||[];S.fav=S.fav||[];S.user=S.user||null;
+  S.ideas=S.ideas||[];S.used=S.used||[];S.fav=S.fav||[];S.del=S.del||[];S.user=S.user||null;
   if(view==='cal')renderCal();else if(view==='all')renderList();
   stats();renderAlert();
 }
 addEventListener('storage',e=>{if(e.key===K)reloadState(e.newValue)});
 addEventListener('pageshow',e=>{if(e.persisted)reloadState()});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-renderChips();draw();arrowCheck();pickUser(false);renderAlert();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow()});
+renderChips();draw();arrowCheck();pickUser(false);renderAlert();syncNow();
 // Semana ativa? Abre direto na agenda — é o que o time vem consultar
 (()=>{const now=new Date(),dow=now.getDay()||7,mon=new Date(now);mon.setDate(now.getDate()-(dow-1));
   for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);
