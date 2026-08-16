@@ -1,0 +1,1177 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ignição · PH</title>
+<style>
+  :root{
+    --bg:#0a0d0f; --card:#11181c; --card2:#161f24; --line:#233037;
+    --ember:#2fc7e8; --ember-soft:rgba(47,199,232,.13);
+    --text:#eef5f7; --muted:#94a6ae; --dim:#5f7178;
+    --disp:'Avenir Next Condensed','Arial Narrow',system-ui,sans-serif;
+    --body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{color-scheme:dark}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.5;min-height:100vh}
+  .wrap{max-width:640px;margin:0 auto;padding:0 18px 90px}
+
+  header{padding:22px 0 4px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .cal-btn{background:var(--card);border:1px solid var(--line);border-radius:99px;height:42px;padding:0 16px;
+    font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.09em;font-size:13px;
+    color:var(--text);cursor:pointer;display:flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap;flex:0 0 auto}
+  .cal-btn.on{border-color:var(--ember);color:var(--ember);box-shadow:0 0 0 1px var(--ember)}
+  @media(max-width:470px){header{flex-wrap:wrap;row-gap:10px}}
+  .stats{margin:2px 0 10px}
+  .brand{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.2em;font-size:15px}
+  .brand em{color:var(--ember);font-style:normal}
+  .stats{font-size:12px;color:var(--dim);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+
+  .chipwrap{position:relative}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:6px 34px 14px 0;scrollbar-width:none;scroll-behavior:smooth}
+  .chips::-webkit-scrollbar{display:none}
+  .chip-arrow{position:absolute;right:-2px;top:2px;bottom:10px;width:56px;border:none;cursor:pointer;
+    background:linear-gradient(90deg,transparent,var(--bg) 55%);color:var(--ember);
+    font-size:22px;font-weight:700;text-align:right;padding-right:4px;transition:opacity .2s}
+  .chip-arrow.off{opacity:0;pointer-events:none}
+  .chip{flex:0 0 auto;font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+    font-size:12.5px;color:var(--muted);border:1px solid var(--line);background:transparent;
+    padding:7px 13px;border-radius:99px;cursor:pointer;transition:.15s}
+  .chip.on{color:var(--bg);background:var(--ember);border-color:var(--ember)}
+
+  /* CARTÃO DE IGNIÇÃO */
+  .stage{margin-top:6px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 26px 24px;
+    min-height:340px;display:flex;flex-direction:column;gap:16px;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--ember),transparent 70%)}
+  .mode{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.16em;font-size:12.5px;color:var(--ember)}
+  .pre{font-size:13.5px;color:var(--dim);font-style:italic}
+  .txt{font-family:var(--disp);font-weight:600;font-size:clamp(25px,6.4vw,34px);line-height:1.14;text-wrap:balance;flex:1}
+  .who{font-size:13.5px;color:var(--muted);letter-spacing:.02em}
+  .who b{color:var(--text);font-weight:600}
+  .hook{border-left:2px solid var(--ember);padding:2px 0 2px 12px;font-size:14.5px;color:var(--muted)}
+  .hook b{color:var(--ember);font-weight:600;letter-spacing:.06em;font-size:12px;text-transform:uppercase;font-family:var(--disp);display:block;margin-bottom:2px}
+  .state{position:absolute;top:16px;right:18px;font-size:12px;color:var(--dim);display:flex;gap:8px}
+  .state span{border:1px solid var(--line);border-radius:99px;padding:2px 9px}
+  .state .fav{color:#e8b04c;border-color:#4a3c22}
+  .state .used{color:var(--muted)}
+
+  .actions{display:flex;gap:10px;margin-top:14px}
+  button.act{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:14px;
+    border-radius:10px;padding:15px 10px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--text);flex:1;transition:.15s}
+  button.act:active{transform:scale(.97)}
+  .draw{background:var(--ember)!important;color:#04161c!important;border-color:var(--ember)!important;flex:1.6!important;font-size:15px!important}
+  .toggled{color:var(--ember)!important;border-color:var(--ember)!important}
+
+  .hint{text-align:center;color:var(--dim);font-size:12px;margin-top:14px;letter-spacing:.03em}
+
+  /* ACERVO */
+  .tabs{display:flex;gap:22px;margin:30px 0 6px;border-bottom:1px solid var(--line)}
+  .tab{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:14px;
+    color:var(--dim);background:none;border:none;padding:10px 2px;cursor:pointer;border-bottom:2px solid transparent}
+  .tab.on{color:var(--text);border-bottom-color:var(--ember)}
+  .group-h{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:14px;
+    color:var(--ember);margin:30px 0 10px;display:flex;align-items:baseline;gap:10px}
+  .group-h small{color:var(--dim);font-size:12px;letter-spacing:.06em;font-family:var(--body);font-weight:400}
+  .rows{display:flex;flex-direction:column;gap:8px}
+  .row{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;cursor:pointer;
+    background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ember);border-radius:10px;transition:.12s}
+  .row:active{transform:scale(.99)}
+  .row .body{flex:1;min-width:0}
+  .row p{font-size:15.5px;color:var(--text);font-weight:500;line-height:1.4}
+  .row .src{font-size:12.5px;color:var(--muted);margin-top:4px;letter-spacing:.02em}
+  .row.u{border-left-color:var(--line)}
+  .row.u p{color:var(--dim);font-weight:400}
+  .row .m{font-size:14px;flex:0 0 auto;padding-top:2px;color:var(--muted)}
+  .row .m .fv{color:#e8c04c}
+  .empty{color:var(--dim);font-size:14px;padding:30px 0;text-align:center}
+  .hidden{display:none}
+
+  /* CALENDÁRIO */
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin:22px 0 6px}
+  .cal-head h2{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:19px}
+  .cal-nav{display:flex;gap:8px}
+  .cal-nav button{background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:8px;
+    width:38px;height:38px;font-size:17px;cursor:pointer}
+  .cal-streak{font-size:12.5px;color:var(--dim);margin-bottom:14px;letter-spacing:.03em}
+  .cal-streak b{color:var(--ember)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+  .cal-wd{font-family:var(--disp);font-weight:700;font-size:11.5px;color:var(--dim);text-align:center;
+    text-transform:uppercase;letter-spacing:.08em;padding:4px 0}
+  .cal-d{background:var(--card);border:1px solid var(--line);border-radius:9px;min-height:74px;padding:6px 5px 5px;
+    cursor:pointer;display:flex;flex-direction:column;gap:3px;position:relative;transition:.12s;min-width:0;overflow:hidden}
+  @media(max-width:420px){.cal-d .tag{font-size:9px;letter-spacing:.02em}.cal-d{min-height:66px;padding:5px 3px 4px}}
+  .cal-d:active{transform:scale(.96)}
+  .cal-d .n{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .cal-d .tag{font-family:var(--disp);font-weight:600;font-size:10.5px;line-height:1.15;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--ember);text-wrap:balance}
+  .cal-d.free{background:transparent;cursor:default}
+  .cal-d.free .tag{color:var(--dim);font-weight:400}
+  .cal-d.out{opacity:.28}
+  .cal-d.today{border-color:var(--ember);box-shadow:0 0 0 1px var(--ember)}
+  .cal-d.done{background:var(--ember-soft);border-color:transparent}
+  .cal-d .ok{position:absolute;bottom:4px;right:6px;font-size:12px;color:var(--ember)}
+  .cal-legend{margin-top:18px;display:flex;flex-direction:column;gap:6px}
+  .cal-legend .lg{font-size:13px;color:var(--muted)}
+  .cal-legend .lg b{color:var(--text);font-family:var(--disp);text-transform:uppercase;letter-spacing:.07em;font-size:12.5px;font-weight:700}
+  /* painel do dia */
+  .day-panel{position:fixed;inset:auto 0 0 0;background:var(--card2);border-top:1px solid var(--line);
+    border-radius:18px 18px 0 0;padding:26px 22px 34px;z-index:60;max-width:640px;margin:0 auto;
+    max-height:86vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .day-panel .mode{margin-bottom:4px}
+  .day-panel h3{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:23px;letter-spacing:.03em;margin-bottom:4px}
+  .day-panel .cats{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .day-panel .catlist{display:flex;flex-direction:column;gap:9px;margin-bottom:16px}
+  .catbtn{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:15px;
+    text-align:left;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ember);
+    color:var(--text);border-radius:10px;padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+  .catbtn small{color:var(--dim);font-family:var(--body);font-weight:400;letter-spacing:0;text-transform:none;font-size:12.5px}
+  .catbtn:active{transform:scale(.98)}
+  .day-panel .actions{margin-top:0}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:55}
+  /* PERFIS */
+  .user-chip{background:var(--card);border:1px solid var(--line);border-radius:99px;height:30px;padding:0 12px;
+    font-size:12px;color:var(--muted);cursor:pointer;font-weight:600}
+  .profile-overlay{position:fixed;inset:0;background:var(--bg);z-index:80;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;gap:14px;padding:8vw}
+  .profile-overlay h2{font-family:var(--disp);text-transform:uppercase;font-size:24px;letter-spacing:.08em}
+  .profile-overlay p{color:var(--muted);font-size:14px;margin-bottom:10px;text-align:center}
+  .pbtn{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:16px;
+    background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:12px;
+    padding:16px;width:100%;max-width:340px;cursor:pointer}
+  .pbtn:active{transform:scale(.98)}
+  /* PIPELINE / EDITOR DO DIA */
+  .pilar-row{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 12px}
+  .pilar-b{font-family:var(--disp);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;
+    border-radius:99px;padding:7px 11px;cursor:pointer;background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .pilar-b.on{color:#0a0d0f;font-weight:700}
+  .tema-sel{width:100%;background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:9px;
+    padding:11px;font-size:14px;margin-bottom:12px;font-family:var(--body)}
+  .st-row{display:flex;gap:6px;margin-bottom:14px}
+  .st-b{flex:1;font-family:var(--disp);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+    border:1px solid var(--line);background:transparent;color:var(--dim);border-radius:8px;padding:9px 2px;cursor:pointer}
+  .st-b.on{background:var(--ember);border-color:var(--ember);color:#04161c;font-weight:700}
+  .cal-d .pdot{position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%}
+  .cal-d .stb{position:absolute;bottom:4px;right:6px;font-size:10px;font-weight:700}
+  /* IDEIAS */
+  .idea-fab{position:fixed;bottom:22px;right:18px;z-index:40;background:var(--ember);color:#04161c;border:none;
+    border-radius:99px;height:52px;padding:0 20px;font-family:var(--disp);font-weight:700;text-transform:uppercase;
+    letter-spacing:.08em;font-size:14px;cursor:pointer;box-shadow:0 4px 18px rgba(47,199,232,.35)}
+  .idea-modal{position:fixed;inset:auto 0 0 0;background:var(--card2);border-top:1px solid var(--line);z-index:60;
+    border-radius:18px 18px 0 0;padding:24px 22px 34px;max-width:640px;margin:0 auto}
+  .idea-modal h3{font-family:var(--disp);text-transform:uppercase;font-size:19px;margin-bottom:12px}
+  .idea-modal textarea{width:100%;min-height:90px;background:var(--card);border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:12px;font-size:15px;font-family:var(--body);margin-bottom:10px;resize:vertical}
+  .row .by{color:var(--dim);font-size:11.5px;margin-top:3px}
+  /* ASSISTENTE SEMANAL */
+  .wiz{position:fixed;inset:0;background:var(--bg);z-index:70;overflow-y:auto;padding:20px 18px 40px}
+  .wiz-in{max-width:640px;margin:0 auto}
+  .wiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .wiz-top h2{font-family:var(--disp);text-transform:uppercase;font-size:20px;letter-spacing:.06em}
+  .wiz-prog{color:var(--dim);font-size:12.5px;margin-bottom:18px}
+  .wiz-day{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:26px;margin:6px 0 2px}
+  .wiz-q{color:var(--muted);font-size:14px;margin-bottom:12px}
+  .sug{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ember);border-radius:10px;
+    padding:13px 15px;font-size:14.5px;cursor:pointer;margin-bottom:8px;color:var(--text)}
+  .sug small{display:block;color:var(--dim);font-size:11.5px;margin-top:3px}
+  .sug.on{border-color:var(--ember);background:var(--ember-soft)}
+  .wiz-skip{background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:8px 0;text-decoration:underline}
+  .wiz-sum{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:14px}
+  .wiz-sum b{font-family:var(--disp);text-transform:uppercase;font-size:12px;letter-spacing:.06em}
+
+  /* ALERTA DE GRAVAÇÃO */
+  .alertbar{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ember);border-radius:12px;
+    padding:13px 15px;margin:2px 0 12px;display:flex;align-items:center;gap:12px}
+  .alertbar .tx{flex:1;font-size:14px;color:var(--muted)}
+  .alertbar .tx b{color:var(--text)}
+  button.act:disabled{opacity:.45;cursor:default;transform:none}
+
+  /* MODO FOCO */
+  .focus-overlay{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;
+    justify-content:center;padding:8vw;gap:22px}
+  .focus-overlay .txt{font-size:clamp(30px,8vw,52px);flex:0}
+  .focus-close{position:absolute;top:20px;right:22px;background:none;border:1px solid var(--line);color:var(--muted);
+    border-radius:99px;width:38px;height:38px;font-size:16px;cursor:pointer}
+  .rec{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-family:var(--disp);font-weight:600}
+  .dot{width:9px;height:9px;border-radius:50%;background:#d43c3c;animation:blink 1.4s infinite}
+  @keyframes blink{50%{opacity:.15}}
+  @media (prefers-reduced-motion:reduce){.dot{animation:none}}
+  button:focus-visible,.chip:focus-visible,.row:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">Ignição <em>·</em> PH</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="user-chip" id="userChip" title="Trocar perfil">👤</button>
+      <button class="cal-btn" id="btnDrive" title="Pasta dos vídeos no Drive">📁 Drive</button>
+      <button class="cal-btn" id="btnCal">📅 Calendário</button>
+    </div>
+  </header>
+  <div class="stats" id="stats"></div>
+  <div id="alert"></div>
+
+  <div class="chipwrap">
+    <div class="chips" id="chips"></div>
+    <button class="chip-arrow" id="chipArrow" aria-label="Mais categorias">›</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" id="tabAll">Acervo</button>
+    <button class="tab" id="tabDraw">Sorteio</button>
+  </div>
+
+  <section class="stage" id="stage">
+    <div class="card" id="card" role="button" tabindex="0" title="Toque para modo foco"></div>
+    <div class="actions">
+      <button class="act draw" id="btnDraw">🎲 Me provoca</button>
+      <button class="act" id="btnUsed">✓ Gravei</button>
+      <button class="act" id="btnFav">☆</button>
+    </div>
+    <p class="hint">Toque no cartão para o modo foco · marque <b>Gravei</b> para não repetir</p>
+  </section>
+
+  <section id="list" class="hidden"></section>
+  <section id="cal" class="hidden"></section>
+</div>
+
+<script>
+const CATS={
+  sto:{n:'Estoicos',pre:'“Tem uma frase de 2.000 anos que resolve um problema de hoje:”'},
+  ceo:{n:'CEOs & líderes',pre:'“Li uma frase que não me sai da cabeça:”'},
+  liv:{n:'Livros',pre:'“Esse livro me pegou numa frase:”'},
+  tri:{n:'Trilhas de raciocínio',pre:'“Deixa eu pensar alto com você:”'},
+  fra:{n:'Complete a frase',pre:'“Vou começar uma frase — e terminar com a minha verdade:”'},
+  tes:{n:'Teses',pre:'“Me jogaram uma tese que me incomodou:”'},
+  tem:{n:'Temas do radar',pre:'“Tem um assunto que o mercado inteiro tá discutindo:”'},
+  per:{n:'Perguntas',pre:'“Me fizeram uma pergunta que me travou:”'},
+  mar:{n:'Marcos & histórias',pre:'“Deixa eu te contar uma história que tem tudo a ver com transporte:”'},
+  col:{n:'Colisões',pre:'“Dois mundos que não se falam — e deviam:”'},
+  ten:{n:'Tensões',pre:'“Tem uma tensão que eu vivo todo dia:”'},
+  pov:{n:'Pontos de vista',pre:'“Hoje eu quero olhar isso por outros olhos:”'}
+};
+// [cat, texto, autor/fonte, gancho]
+const DATA=[
+// PERGUNTAS — decisão & risco
+['per','Qual foi a última decisão que você tomou sozinho e queria ter dividido com alguém?'],
+['per','Que oportunidade você recusou recentemente — e o que a recusa diz sobre sua estratégia?'],
+['per','Qual decisão você tomou contra o consenso do time? Como terminou?'],
+['per','O que você decide por instinto — e o que só decide com número na mesa?'],
+['per','Qual decisão você está adiando agora, e o que o adiamento já está custando?'],
+['per','Se tivesse que cortar um dos seus projetos amanhã, qual critério usaria?'],
+['per','Qual foi o "não" mais caro que você já disse? E o "sim" que saiu mais caro ainda?'],
+['per','Que decisão pequena virou um padrão grande dentro da empresa?'],
+// perguntas — cultura & pessoas
+['per','O que você tolera no time hoje que sabe que não deveria tolerar?'],
+['per','Qual comportamento você demitiria mesmo vindo de quem entrega resultado alto?'],
+['per','O que seu time resolve hoje sem você que há um ano dependia de você?'],
+['per','Que conversa difícil você adiou — e o que aconteceu quando finalmente aconteceu?'],
+['per','O que você aprendeu com alguém que ganha muito menos que você?'],
+['per','Se um funcionário novo assistisse seus últimos 10 vídeos, que cultura ele entenderia?'],
+['per','Qual ritual da empresa você defenderia até o fim — e por que ele existe?'],
+['per','Quem te deu o feedback mais duro da sua carreira — e o que ficou dele?'],
+// perguntas — construção & tecnologia
+['per','Qual automação sua ninguém percebeu que existe — e qual todo mundo percebeu no dia 1?'],
+['per','O que a IA ainda não resolve na sua empresa — e você desconfia que nunca vai resolver?'],
+['per','Qual ferramenta você abandonou depois de investir tempo e dinheiro? O que ela te ensinou?'],
+['per','Se recomeçasse a Unity hoje, com as ferramentas de hoje, o que faria diferente no dia 1?'],
+['per','Qual foi a última coisa que você construiu com as próprias mãos — e que problema ela resolve?'],
+['per','O que os gurus de IA falam que te faz balançar a cabeça?'],
+['per','Que dor da sua operação ainda não virou produto — e por que ainda não?'],
+['per','Se pudesse mexer na operação do seu cliente, o que removeria primeiro?'],
+// perguntas — setor & visão
+['per','O que todo mundo no transporte aceita como "normal" que você acha inaceitável?'],
+['per','Que mudança silenciosa está acontecendo no setor que quase ninguém comenta?'],
+['per','Onde estará o dinheiro da logística daqui a 5 anos que hoje ninguém está olhando?'],
+['per','O que uma indústria deveria perguntar à transportadora antes de contratar — e nunca pergunta?'],
+['per','Qual verdade do setor você só descobriu operando, que consultor nenhum te contaria?'],
+['per','Se você mandasse no setor por um dia, que regra mudaria primeiro?'],
+['per','Que empresa de FORA da logística você estuda — e o que roubaria dela?'],
+['per','O motorista autônomo brasileiro daqui a 10 anos: melhor ou pior do que hoje? Por quê?'],
+// perguntas — trajetória & identidade
+['per','O que o Philipe de 13 anos acharia da sua segunda-feira de hoje?'],
+['per','Qual "cedo demais" da sua vida se provou na hora certa?'],
+['per','O que você fingiu saber no começo — e quando parou de precisar fingir?'],
+['per','Que conselho você recebeu, ignorou — e ainda bem que ignorou?'],
+['per','Qual parte da sua história você ainda tem receio de contar? O que te segura?'],
+['per','O que mudou na sua forma de decidir quando você virou pai?'],
+['per','Que hábito de "gente grande" você adotou cedo — e qual rejeitou de propósito?'],
+['per','Se a sua trajetória fosse um case de negócio, qual seria a tese central?'],
+// perguntas — vida & equilíbrio
+['per','O que você protege na agenda com mais força do que qualquer reunião?'],
+['per','Onde termina o Philipe empresário e começa o Philipe? Existe fronteira?'],
+['per','Que lição do futebol de quarta você aplicou na empresa sem perceber?'],
+['per','O que a Jade já te ensinou sobre gestão — sem saber que ensinou?'],
+['per','Qual pequeno luxo é inegociável na sua semana — e o que ele te devolve?'],
+['per','Do que você abriu mão para crescer — e valeu a pena?'],
+['per','O que te desconecta de verdade? Com que frequência isso acontece?'],
+['per','Qual foi a última vez que você mudou de opinião sobre algo importante?'],
+// perguntas — insight & aprendizado
+['per','Que ideia desta semana você quase deixou passar sem anotar?'],
+['per','O que você leu ou ouviu esta semana de que discordou — e por quê?'],
+['per','Qual erro desta semana já virou processo?'],
+['per','Que pergunta de alguém do time te fez pensar mais do que qualquer livro?'],
+['per','O que você faria diferente se esta semana recomeçasse na segunda?'],
+['per','Qual número desta semana te surpreendeu — para cima ou para baixo?'],
+['per','O que você ensinou esta semana que aprendeu na marra?'],
+['per','Que conversa desta semana merecia ter durado mais?'],
+// TENSÕES
+['ten','Lealdade × velocidade — sócios de longa data são sua força; consenso demora. Quando a lealdade vira lentidão?'],
+['ten','Cultura forte × pensamento diverso — cultura demais vira câmara de eco? Como contratar diferente sem diluir o inegociável?'],
+['ten','Automatizar tudo × relacionamento vende frete — a máquina cuida de quê, e o olho no olho cuida de quê?'],
+['ten','Transparência no conteúdo × concorrente assistindo — onde passa a linha do que você conta?'],
+['ten','Pai presente × founder de 3 frentes — qual dos dois rouba tempo de quem? Resposta honesta, não a bonita.'],
+['ten','Contratar rápido para crescer × errar contratação custa cultura — qual dos dois erros você prefere?'],
+['ten','Meta agressiva inspira × meta agressiva esgota — como calibrar o Cruzeiro sem afundar a tripulação?'],
+['ten','Asset-light × profundidade de vínculo — não ter ativo te fez ágil; o que garante o agregado aqui amanhã?'],
+// TESES
+['tes','Toda transportadora vai virar empresa de tecnologia — ou fornecedor de quem virou.'],
+['tes','Relacionamento é o único diferencial que a IA não copia.'],
+['tes','Empresa pequena não tem problema de gestão; tem problema de dono.'],
+['tes','O WhatsApp é o maior sistema logístico do Brasil.'],
+['tes','Vender mais é a pior solução para uma empresa desorganizada.'],
+['tes','IA não vai substituir o motorista — vai substituir quem gerencia motorista mal.'],
+['tes','Founder que não comunica está terceirizando a narrativa da própria empresa.'],
+['tes','Quem precisa de crachá e escritório bonito para ter cultura, não tem cultura.'],
+// COMPLETE A FRASE
+['fra','O maior risco de crescer rápido não é quebrar a empresa — é...'],
+['fra','Todo mundo diz que gente é o maior ativo, mas na prática...'],
+['fra','Se eu pudesse ensinar UMA coisa a um empresário de 20 anos, seria...'],
+['fra','O que o cliente compra da Unity não é frete, é...'],
+['fra','Meu maior medo como founder não é falir — é...'],
+['fra','A tecnologia mais subestimada da logística é...'],
+['fra','Cultura de verdade aparece no dia em que...'],
+['fra','A diferença entre chefe e líder que ninguém fala é...'],
+// COLISÕES
+['col','Futebol × contratação — o que a escalação da pelada de quarta ensina que o RH esquece?'],
+['col','Vinho × estratégia — o que envelhecer bem ensina sobre construir empresa (e sobre o que não se apressa)?'],
+['col','Relógio × processo — o que uma máquina que leva décadas para ser feita ensina sobre operação?'],
+['col','Igreja × liderança — o que um culto de domingo tem que a reunião de segunda deveria ter?'],
+['col','Paternidade × gestão — em que a Jade, aos 3 anos, é sua melhor professora de liderança?'],
+['col','Copy dos anos 60 × frete de 2026 — o que Schwartz e Ogilvy ensinam sobre vender transporte?'],
+['col','Creator economy × TRC — o que a arena dos creators ensina a uma transportadora B2B?'],
+['col','Asset-light × vida pessoal — o que você decidiu "não possuir" fora da empresa, de propósito?'],
+// TRILHAS
+['tri','Trade-off exposto: escolha uma decisão da semana → reconstrua as opções que descartou → explique por que a descartada perdeu.'],
+['tri','Teste de delegação: pegue algo que só você faz → pergunte por que só você → descreva o que aconteceria se documentasse hoje.'],
+['tri','Causa raiz: pegue uma reclamação recorrente do setor → desmonte a causa raiz → diga o que o setor deveria fazer (e não faz).'],
+['tri','Tribunal do "sempre foi assim": pegue algo que a empresa faz por inércia → investigue a origem → decida em voz alta: mantém ou mata?'],
+['tri','Filtro de hype: pegue a moda do momento → separe o ruído do que fica → diga o que você faria com ela segunda de manhã.'],
+['tri','Número com história: pegue um número da operação (que possa contar) → conte a história por trás → extraia a regra geral.'],
+['tri','Arqueologia de um "não": pegue um não que você levou → o que ele ensinou → que "sim" ele destravou depois.'],
+['tri','Evolução pública: pegue uma crença de 5 anos atrás → confronte com o que sabe hoje → nomeie o que te fez mudar.'],
+// CEOS & LÍDERES
+['ceo','"A cultura come a estratégia no café da manhã."','Peter Drucker','Unity Skills e Cruzeiro existem por isso — mas cultura sem estratégia também morre de fome? Onde uma alimenta a outra?'],
+['ceo','"Sua margem é a minha oportunidade."','Jeff Bezos','Num setor de margem apertada como o TRC, quem está sendo o Bezos de quem? Você ataca a margem de quem?'],
+['ceo','"Mostre-me os incentivos e eu te mostro o resultado."','Charlie Munger','Comissão, prêmio do Cruzeiro, forma de pagar motorista — o que seus incentivos produzem sem você perceber?'],
+['ceo','"Aprenda a construir e aprenda a vender. Quem sabe as duas coisas é imparável."','Naval Ravikant','Você construiu por 15 anos; este projeto de comunicação é a segunda metade da frase.'],
+['ceo','"As pessoas não sabem o que querem até você mostrar a elas."','Steve Jobs','A Knauf não pediu o Track.io — viu um dashboard e perguntou se estava à venda.'],
+['ceo','"Se eu perguntasse às pessoas o que queriam, teriam dito cavalos mais rápidos."','Henry Ford','O motorista nunca pediu um app. A resposta certa foi não dar app nenhum.'],
+['ceo','"Faça coisas que não escalam."','Paul Graham','O Track.io começou como planilha preenchida na mão. Quando o não-escalável é o caminho certo?'],
+['ceo','"Não me diga o que você pensa; me mostre o seu portfólio."','Nassim Taleb','A diferença entre quem opina sobre logística e quem tem CNPJ, folha e frete rodando.'],
+['ceo','"O consumidor não é idiota; é a sua esposa."','David Ogilvy','Respeito pela inteligência do motorista e do cliente — por isso a Vanderleia tem nome de gente.'],
+['ceo','"Sonho grande e sonho pequeno dão o mesmo trabalho."','Jorge Paulo Lemann','Concorda ou discorda? O sonho grande cobra um preço que o pequeno não cobra?'],
+['ceo','"Só os paranoicos sobrevivem."','Andy Grove','O que te deixa paranoico hoje — e o que você faz com essa paranoia?'],
+['ceo','"Leva 20 anos para construir uma reputação e 5 minutos para destruí-la."','Warren Buffett','Documentar em público aumenta o patrimônio e o risco. Como você protege a coerência?'],
+['ceo','"Dor + reflexão = progresso."','Ray Dalio','O balanço mensal existe por isso. Qual dor recente ainda está sem a reflexão?'],
+['ceo','"Primeiro quem, depois o quê."','Jim Collins','Você contrata para o mapa que existe ou para o que ainda vai existir?'],
+['ceo','"Dê uma boa ideia a um time medíocre e eles a estragam; dê uma ideia medíocre a um grande time e eles a consertam."','Ed Catmull (Pixar)','Time > ideia. Onde você já viu isso acontecer na prática?'],
+['ceo','"Seja um aprende-tudo, não um sabe-tudo."','Satya Nadella','Com 15 anos de estrada aos 28, qual é o risco de virar sabe-tudo cedo?'],
+['ceo','"Só existe um chefe: o cliente. Ele pode demitir todo mundo, do dono para baixo."','Sam Walton','Quem manda de verdade no frete — o embarcador, o motorista ou a operação?'],
+['ceo','"Antes de ser líder, sucesso é crescer você mesmo. Depois, sucesso é crescer os outros."','Jack Welch','A virada exata que o Unity Skills tenta provocar nos seus coordenadores.'],
+['ceo','"Treine as pessoas para que possam sair; trate-as tão bem que queiram ficar."','Richard Branson','Formar gente boa é criar concorrente ou criar lealdade? Sua aposta.'],
+['ceo','"Concorrência é para perdedores."','Peter Thiel','Dono de transportadora que constrói tecnologia: um território sem concorrente. Foi sorte ou escolha?'],
+['ceo','"Sempre é o Dia 1. O Dia 2 é estagnação, seguida de morte."','Jeff Bezos','O que na Unity ainda é Dia 1 — e o que já está perigosamente confortável?'],
+// ESTOICOS
+['sto','"Você tem poder sobre sua mente — não sobre os acontecimentos. Perceba isso e encontrará força."','Marco Aurélio','Caminhão parado na BR às 22h: o que está sob seu controle e o que nunca esteve?'],
+['sto','"Não é que tenhamos pouco tempo; é que perdemos muito."','Sêneca','A agenda de um founder de 3 frentes: o que você cortou este ano — e o que ainda finge que cabe?'],
+['sto','"Não são as coisas que perturbam os homens, mas as opiniões que têm sobre elas."','Epicteto','O problema ou a narrativa do problema: qual dos dois costuma travar sua operação?'],
+['sto','"O impedimento à ação avança a ação. O que está no caminho torna-se o caminho."','Marco Aurélio','Motorista sem rastreador e avesso a app era o obstáculo. Virou o produto. Onde mais isso se repete?'],
+['sto','"A sorte é o que acontece quando a preparação encontra a oportunidade."','Sêneca','A planilha já estava pronta quando o diretor perguntou se estava à venda. Que preparação você está fazendo agora, sem saber para quê?'],
+['sto','"Primeiro diga a si mesmo o que você seria; depois faça o que precisa fazer."','Epicteto','Identidade antes de meta: quem a Unity decidiu SER antes de decidir quanto faturar?'],
+['sto','"Se não é certo, não faça; se não é verdade, não diga."','Marco Aurélio','Todo o guardrail de comunicação deste projeto cabe nessa frase de 1.800 anos.'],
+['sto','"Sofremos mais na imaginação do que na realidade."','Sêneca','A conversa difícil que você ensaiou por semanas: o que doeu mais, a espera ou a conversa?'],
+['sto','"O que não é bom para a colmeia não é bom para a abelha."','Marco Aurélio','A decisão boa para uma pessoa e ruim para o time: como você desempata?'],
+['sto','"Nenhum homem é livre se não é senhor de si mesmo."','Epicteto','Futebol de quarta, igreja de domingo, vinho de sábado: disciplina de rituais é prisão ou liberdade?'],
+['sto','"Enquanto adiamos, a vida passa."','Sêneca','A decisão que você está empurrando há meses. Ela ficou mais fácil com o tempo?'],
+['sto','"Não perca tempo discutindo o que é um homem bom. Seja um."','Marco Aurélio','A diferença entre postar sobre liderança e liderar. Como este projeto não vira só discurso?'],
+['sto','"Nenhum vento sopra a favor de quem não sabe para que porto navega."','Sêneca','O Cruzeiro Unity é literalmente isso: o porto desenhado. E o seu porto pessoal, qual é?'],
+['sto','"É impossível aprender aquilo que se acha que já se sabe."','Epicteto','O que você "já sabia" sobre gestão aos 22 que precisou desaprender aos 28?'],
+// LIVROS
+['liv','"Você não sobe ao nível das suas metas; você cai ao nível dos seus sistemas."','Hábitos Atômicos — James Clear','O Cruzeiro é a meta. Qual é o sistema que segura o navio quando a semana desanda?'],
+['liv','"O melhor problema é aquele que ninguém mais está resolvendo."','Zero to One — Peter Thiel','Rastreamento sem app: o problema estava exposto, ninguém pegou. Qual é o próximo à vista de todos?'],
+['liv','"Não existe receita para os momentos realmente difíceis."','The Hard Thing About Hard Things — Ben Horowitz','A decisão que nenhum livro cobriu. Qual foi a sua — e o que você usou no lugar da receita?'],
+['liv','"Se você não priorizar sua vida, outra pessoa vai."','Essencialismo — Greg McKeown','Quem está escrevendo sua agenda: você ou a urgência dos outros?'],
+['liv','"Há coisas que se beneficiam do caos: o vento apaga a vela e alimenta a fogueira."','Antifrágil — Nassim Taleb','Quando o mercado balança, sua empresa é vela ou fogueira? E o que a tornaria fogueira?'],
+['liv','"As pessoas não compram o que você faz; compram por que você faz."','Comece pelo Porquê — Simon Sinek','O cliente compra frete de todo mundo. O que ele compra SÓ da Unity?'],
+['liv','"O bom é inimigo do ótimo."','Good to Great — Jim Collins','Onde a operação está boa o bastante para ninguém mexer — e é exatamente por isso que deveria mexer?'],
+['liv','"Movimento supera meditação."','The Boron Letters — Gary Halbert','A planilha feita na mão veio antes do produto perfeito. O que você está planejando demais e fazendo de menos?'],
+['liv','"A única maneira de vencer a concorrência é parar de tentar vencê-la."','A Estratégia do Oceano Azul','Frete + tecnologia própria não compete com transportadora nem com software house. Que oceano é esse?'],
+['liv','"Autonomia, maestria e propósito movem mais que dinheiro."','Drive — Daniel Pink','Além do salário e do prêmio: o que a Unity paga em autonomia e maestria?'],
+['liv','"Hábitos-chave criam reações em cadeia que mudam tudo ao redor."','O Poder do Hábito — Charles Duhigg','Qual ritual da Unity é o hábito-chave — aquele que, se cair, derruba os outros?'],
+['liv','"A copy não cria desejo — canaliza o desejo que já existe."','Breakthrough Advertising — Eugene Schwartz','Você não convence indústria a querer visibilidade; ela já quer. Seu trabalho é canalizar.'],
+// MARCOS
+['mar','A Blockbuster riu da Netflix e recusou comprá-la por US$50 milhões.','Netflix × Blockbuster','Quem no TRC está rindo agora — e de quê?'],
+['mar','O WhatsApp foi vendido por US$19 bilhões tendo 55 funcionários.','WhatsApp, 2014','Alavancagem extrema de software — e é a infraestrutura invisível da logística brasileira. O que mais está escondido à vista de todos?'],
+['mar','O Nubank nasceu da burocracia dos bancos: a fila e o papel eram a matéria-prima do disruptor.','Nubank × bancos','Qual é o "cartório" do frete esperando alguém ter coragem?'],
+['mar','A Amazon começou vendendo livros — o nicho era o cavalo de troia da infraestrutura.','Amazon, 1994','A Unity começou puxando carga. O que ela está construindo por baixo?'],
+['mar','Na Toyota, qualquer operário podia puxar a corda e parar a linha de produção inteira.','Toyota / andon','Quem pode "puxar a corda" na sua operação? E se ninguém pode, o que isso diz?'],
+['mar','Fred Smith escreveu a tese da entrega overnight na faculdade; o professor deu nota mediana. Ele apostou a empresa nela.','FedEx','Qual tese sua o mercado ainda dá nota mediana?'],
+['mar','A Nike e as marcas creators pararam de comprar atenção e viraram a própria mídia.','A arena dos creators','Por que quase nenhuma empresa B2B pesada entendeu isso ainda?'],
+['mar','iFood, Uber e 99 engoliram a logística urbana em menos de uma década.','Última milha, 2015-2025','Por que o TRC pesado resiste? E por quanto tempo?'],
+// TEMAS
+['tem','Agentes de IA: o mercado ainda fala de chatbot; a fronteira real é agente com função, memória e autonomia.',null,'Seu ângulo: você já opera um escritório deles — pode mostrar, não teorizar.'],
+['tem','Empresas creators: mídia própria chegando ao B2B pesado.',null,'Seu ângulo: você é o experimento vivo dessa tese no TRC.'],
+['tem','Escassez de motoristas: a categoria envelhece e a renovação não vem.',null,'Seu ângulo: o que precisa mudar para o jovem querer a boleia?'],
+['tem','Sucessão nas transportadoras familiares: a maioria do TRC não tem plano.',null,'Seu ângulo: você é a geração que os filhos dos donos queriam ser.'],
+['tem','Geração Z na operação: como liderar quem não aceita o "sempre foi assim".',null,'Seu ângulo: você tem 28 e lidera gente mais velha e mais nova ao mesmo tempo.'],
+['tem','Custo Brasil: o frete paga a conta da ineficiência do país.',null,'Seu ângulo: o que a tecnologia compensa — e o que só política resolve.'],
+['tem','Solidão do dono: o tema que todo empresário sente e pouca gente com lastro fala.',null,'Seu ângulo: você já se descreveu sem perceber, descrevendo seu público.'],
+['tem','Digitalização documental do frete: burocracia virando dado (CT-e, canhoto digital).',null,'Seu ângulo: quem opera sabe onde o papel ainda manda. (Validar detalhe regulatório antes de gravar.)'],
+// PONTOS DE VISTA
+['pov','Grave pelos olhos do MOTORISTA: narre a sua operação por quem dirige. O que ele vê que você não vê?'],
+['pov','Grave pelos olhos do DIRETOR DA INDÚSTRIA: o que ele teme ao contratar uma transportadora nova?'],
+['pov','Grave pelos olhos do PHILIPE DE 2031: o que ele agradece que você decidiu hoje? O que ele lamenta?'],
+['pov','Grave pelos olhos do CONCORRENTE: se você fosse ele, onde atacaria a Unity primeiro?'],
+['pov','Grave pelos olhos da JADE ADULTA: um dia ela vai assistir a esses vídeos. O que você quer que ela entenda do pai?'],
+['pov','Grave pelos olhos de QUEM CHEGOU HOJE: como a Unity parece para o funcionário no primeiro dia?'],
+['pov','Grave pelos olhos do CÉTICO DE IA: defenda o ceticismo melhor que um cético — depois responda a ele.'],
+['pov','Grave pelos olhos do INVESTIDOR: o que um olhar frio veria de mais valioso — e de mais frágil — no seu grupo?']
+];
+
+// Grade editorial semanal: dia da semana → tema + categorias de ignição
+const PLAN={
+  1:{t:'Operação & decisão',cats:['per','ten']},
+  2:{t:'Produto & tecnologia',cats:['tes','tem']},
+  3:{t:'Autoridade & visão',cats:['ceo','mar']},
+  4:{t:'Vida real & bastidor',cats:['pov','col']},
+  5:{t:'Insight da Semana',cats:['sto','liv','tri']},
+  6:{t:'Livre · stories',cats:[]},
+  0:{t:'Livre · stories',cats:[]}
+};
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+// Pilares oficiais (sistema do Fabiano) + conexão com categorias de ignição
+const PILARES={
+  time:{n:'Gestão de Time',s:'Time',c:'#2dd4bf',cats:['per','ten','tri']},
+  pes:{n:'Gestão de Pessoas',s:'Pessoas',c:'#fbbf24',cats:['per','ceo','ten']},
+  uni:{n:'Unity',s:'Unity',c:'#60a5fa',cats:['per','tri','mar']},
+  van:{n:'Vanderle.IA',s:'Vand.IA',c:'#c084fc',cats:['tes','tem']},
+  aut:{n:'Autoridade & Eventos',s:'Autoridade',c:'#fb7185',cats:['ceo','mar','tes','tem']},
+  vida:{n:'Vida Real',s:'Vida real',c:'#4ade80',cats:['pov','col']},
+  ins:{n:'Insight da Semana',s:'Insight',c:'#facc15',cats:['sto','liv','tri']}
+};
+// Banco de ideias por pilar — gerado pela IA do projeto (rev. 2026-08-11).
+// Amplo por design: ideias, não roteiros. Cada item: [pilar, tipo ('t'=tema | 'i'=ignição), texto]
+const IDEIAS=[
+  // GESTÃO DE TIME
+  ['time','t','Como decido quando delegar algo em vez de fazer eu mesmo'],
+  ['time','t','Como o time toca Unity e Vanderle.IA sem perder a qualidade'],
+  ['time','t','O ritual de time que mais me economiza tempo na semana'],
+  ['time','t','Como os agentes de IA viraram parte do time do escritório'],
+  ['time','t','O que um time pequeno faz melhor que um grande'],
+  ['time','t','Reunião que eu matei — e ninguém sentiu falta'],
+  ['time','i','Qual tarefa só você fazia há um ano — e quem faz hoje? O que destravou a passagem?'],
+  ['time','i','Se você sumisse por 30 dias, o que quebraria primeiro na operação? Por que ainda depende de você?'],
+  ['time','i','Qual foi a última vez que o time decidiu melhor sem você na sala?'],
+  ['time','i','O que você cobra do time que ainda não cobra de si mesmo?'],
+  ['time','i','Qual processo virou burocracia — e quem tem coragem de matar?'],
+  ['time','i','Onde o "sempre foi assim" ainda manda no seu time?'],
+  ['time','i','Qual conversa o time está evitando ter — e quanto ela custa por semana?'],
+  ['time','i','O que o seu melhor funcionário faz que ninguém documentou?'],
+  // GESTÃO DE PESSOAS
+  ['pes','t','3 perguntas que faço antes de contratar alguém'],
+  ['pes','t','Como eu dou feedback sem quebrar a relação'],
+  ['pes','t','O erro de contratação que mais me ensinou'],
+  ['pes','t','Como lidero gente mais velha e mais experiente que eu'],
+  ['pes','t','O que faz alguém crescer rápido dentro da Unity'],
+  ['pes','t','Demitir rápido ou insistir na pessoa: onde traço a linha'],
+  ['pes','i','Qual contratação te ensinou mais: a melhor ou a pior? Conta a história.'],
+  ['pes','i','Que sinal em entrevista você ignorou uma vez — e nunca mais?'],
+  ['pes','i','Feedback que você recebeu e doeu — mas te mudou. Qual foi?'],
+  ['pes','i','Quem apostou em você antes de você se achar pronto? O que isso mudou na forma como você promove?'],
+  ['pes','i','Qual talento você perdeu por não agir a tempo?'],
+  ['pes','i','Caráter se contrata ou se treina? Defenda com um caso real.'],
+  ['pes','i','O que a geração Z te cobra que a sua geração aceitava calada?'],
+  ['pes','i','Qual pessoa do time te surpreendeu este mês — e você contou pra ela?'],
+  // UNITY
+  ['uni','t','Como a Unity resolve um problema que a maioria ainda não resolveu'],
+  ['uni','t','Um erro que a Unity cometeu e como corrigimos'],
+  ['uni','t','Por que a Unity não tem caminhão — e por que isso é força'],
+  ['uni','t','Bastidor de um fechamento de mês na transportadora'],
+  ['uni','t','Uma decisão de operação desta semana, do começo ao fim'],
+  ['uni','t','O que o cliente compra da Unity que não é frete'],
+  ['uni','i','Qual foi o frete mais difícil do mês — e o que ele revelou da operação?'],
+  ['uni','i','O que a indústria exige da transportadora que ela mesma não faz?'],
+  ['uni','i','Cliente-âncora: bênção ou risco? A resposta honesta de quem tem.'],
+  ['uni','i','Que número da operação você olha todo dia — e qual deveria olhar e não olha?'],
+  ['uni','i','Qual promessa comercial a operação paga caro pra cumprir?'],
+  ['uni','i','O agregado é seu parceiro ou seu fornecedor? A resposta muda como você o trata.'],
+  ['uni','i','O que quase deu errado esta semana e o cliente nunca soube?'],
+  ['uni','i','Se a Unity perdesse o maior cliente amanhã, qual é o plano real?'],
+  // VANDERLE.IA
+  ['van','t','Por que a nossa IA tem nome de gente'],
+  ['van','t','O motorista não queria app — o que fizemos no lugar'],
+  ['van','t','O que a IA já resolve de verdade na logística (sem hype)'],
+  ['van','t','Uma decisão sobre a Vanderle.IA que quase não deu certo'],
+  ['van','t','Do MVP ao assinante pago: o que estou aprendendo sobre conversão'],
+  ['van','t','Uma pergunta que recebo toda semana e como respondo'],
+  ['van','i','Qual feedback de motorista mudou o produto? Conta a conversa.'],
+  ['van','i','O que o motorista faz no WhatsApp que nenhum TMS entendeu ainda?'],
+  ['van','i','Qual feature você cortou — e o produto ficou melhor sem ela?'],
+  ['van','i','Quem paga: a transportadora ou o motorista? Por que essa resposta define o produto.'],
+  ['van','i','O dia em que a IA errou com um usuário: o que você fez?'],
+  ['van','i','O que você sabe da ponta da estrada que uma software house nunca vai saber?'],
+  ['van','i','Qual métrica do MVP te tira o sono — e qual te dá esperança?'],
+  ['van','i','Se a Vanderle.IA sumisse hoje, o que o mercado perderia de verdade?'],
+  // AUTORIDADE & EVENTOS
+  ['aut','t','O que ninguém conta sobre empreender no setor de logística'],
+  ['aut','t','Minha visão sobre pra onde a logística no Brasil está indo'],
+  ['aut','t','Uma lição que aprendi com outro empresário'],
+  ['aut','t','Bastidor de um evento ou conversa relevante do setor'],
+  ['aut','t','Como penso em crescer sem perder o controle da operação'],
+  ['aut','t','A tese que eu defendo e o mercado ainda dá nota mediana'],
+  ['aut','i','Qual verdade do TRC você só fala em mesa fechada — e já pode falar em público?'],
+  ['aut','i','Quem está rindo de quem no frete hoje — e quem vai parar de rir primeiro?'],
+  ['aut','i','Qual conselho famoso do mercado simplesmente não funciona na logística?'],
+  ['aut','i','O que você defendia há 2 anos e hoje mudou? O que te fez mudar?'],
+  ['aut','i','Se você abrisse uma transportadora do zero hoje, o que faria diferente de tudo?'],
+  ['aut','i','Qual burocracia do frete está esperando alguém ter coragem de atacar?'],
+  ['aut','i','O que o transportador tradicional entende que a logtech de escritório ignora?'],
+  ['aut','i','Daqui a 5 anos, o que do TRC de hoje vai parecer absurdo?'],
+  // VIDA REAL
+  ['vida','t','Como é meu dia a dia — sem filtro de LinkedIn'],
+  ['vida','t','O que a paternidade mudou na forma como eu trabalho'],
+  ['vida','t','Futebol de quarta: o que a pelada ensina que a reunião não ensina'],
+  ['vida','t','Recap da semana — bastidores do que não postei'],
+  ['vida','t','Um hábito que sustenta minha semana (e não é acordar às 5h)'],
+  ['vida','t','O que a fé muda na forma como eu decido'],
+  ['vida','i','O que você desliga de verdade no fim de semana — e o que só finge desligar?'],
+  ['vida','i','Qual momento com a sua filha te ensinou algo que reunião nenhuma ensinou?'],
+  ['vida','i','O que o dinheiro mudou em você — e o que você não deixou mudar?'],
+  ['vida','i','Qual foi o último dia em que você não pensou em empresa? O que tinha nele?'],
+  ['vida','i','O que sua esposa vê no seu trabalho que você não vê?'],
+  ['vida','i','Qual ritual pequeno da sua semana você defenderia mais que qualquer reunião?'],
+  ['vida','i','De que parte da sua rotina você tem orgulho — e qual esconderia do seu público?'],
+  ['vida','i','O que Volta Redonda ainda explica em você?'],
+  // INSIGHT DA SEMANA
+  ['ins','t','2 insights que tive na semana'],
+  ['ins','t','Insight da leitura ou do conteúdo que consumi na semana'],
+  ['ins','t','O número da semana que me surpreendeu'],
+  ['ins','t','O erro da semana que já virou processo'],
+  ['ins','t','Insight sobre equilibrar as frentes de negócio'],
+  ['ins','t','A conversa da semana que merecia ter durado mais'],
+  ['ins','i','O que você aprendeu esta semana que gostaria de ter aprendido há 5 anos?'],
+  ['ins','i','Qual ideia desta semana você quase deixou passar sem anotar?'],
+  ['ins','i','O que você leu ou ouviu e discordou — e por quê?'],
+  ['ins','i','Qual pergunta de alguém do time te travou esta semana?'],
+  ['ins','i','Se a semana recomeçasse na segunda, o que você faria diferente?'],
+  ['ins','i','Qual decisão da semana você tomou rápido demais — ou devagar demais?'],
+  ['ins','i','O que funcionou tão bem esta semana que merece virar padrão?'],
+  ['ins','i','Qual conversa, número ou incômodo desta semana vira conteúdo?']
+];
+const STATUS=['Planejado','Gravado','Editado','Publicado'];
+const USERS=['PH','Rodrigo','Fabiano'];
+const DRIVE_URL='https://drive.google.com/drive/folders/1iaJZ6OW2753g2zBYT2QKSwYuaUemHdHx'; // pasta oficial dos vídeos — vale para todo mundo
+
+// ————— SUPABASE (agenda compartilhada) —————
+// Cole aqui os 2 valores do seu projeto (Settings → API no painel do Supabase).
+// A "anon key" é pública por design (protegida por Row Level Security no banco),
+// então pode ficar aqui no front-end sem problema — diferente do token do GitHub.
+const SUPA_URL='https://sqoxidolxjmifziahfsz.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxb3hpZG9seGptaWZ6aWFoZnN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MjUyMzksImV4cCI6MjEwMjQwMTIzOX0.p7RVDFYNUNA25IzGXAhK3NsoYenzjjlToTUbaxetGuw';
+const AGENDA_ENDPOINT=SUPA_URL+'/rest/v1/agenda';
+
+const K='ignicao-ph-dev';
+let S=JSON.parse(localStorage.getItem(K)||'{"used":[],"fav":[]}');
+S.days=S.days||{};
+for(const k in S.days){if(S.days[k]===true)S.days[k]={st:1}}
+S.ideas=S.ideas||[];
+S.del=S.del||[];
+S.user=S.user||null;
+const save=()=>localStorage.setItem(K,JSON.stringify(S));
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+let filter=null, cur=-1, showUsed=false, view='all';
+let calRef=new Date();
+
+const $=id=>document.getElementById(id);
+const chipsEl=$('chips'), cardEl=$('card'), statsEl=$('stats'), listEl=$('list');
+
+function pool(){
+  return DATA.map((d,i)=>i).filter(i=>(!filter||DATA[i][0]===filter)&&(showUsed||!S.used.includes(i)));
+}
+function renderChips(){
+  let h=`<button class="chip ${!filter?'on':''}" data-c="">Tudo</button>`;
+  for(const c in CATS){h+=`<button class="chip ${filter===c?'on':''}" data-c="${c}">${CATS[c].n}</button>`}
+  chipsEl.innerHTML=h;
+  chipsEl.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{filter=b.dataset.c||null;renderChips();view==='draw'?draw():renderList();});
+}
+function stats(){
+  statsEl.textContent=`${pool().length} disponíveis · ${S.used.length} gravada${S.used.length===1?'':'s'}`;
+  $('btnUsed').textContent=S.used.includes(cur)?'↩ Desmarcar':'✓ Gravei';
+  $('btnFav').textContent=S.fav.includes(cur)?'★':'☆';
+  $('btnFav').classList.toggle('toggled',S.fav.includes(cur));
+}
+function cardHTML(i,focus){
+  const [c,t,w,h]=DATA[i];
+  return `${focus?'<div class="rec"><span class="dot"></span>Pensando alto</div>':''}
+    <div class="state">${S.fav.includes(i)?'<span class="fav">★ favorita</span>':''}${S.used.includes(i)?'<span class="used">✓ gravada</span>':''}</div>
+    <div class="mode">${CATS[c].n}</div>
+    <div class="pre">${CATS[c].pre}</div>
+    <div class="txt">${t}</div>
+    ${w?`<div class="who">— <b>${w}</b></div>`:''}
+    ${h?`<div class="hook"><b>Gancho pro seu mundo</b>${h}</div>`:''}`;
+}
+function draw(){
+  const p=pool().filter(i=>i!==cur);
+  if(!p.length){cardEl.innerHTML='<div class="mode">Acervo esgotado</div><div class="txt">Você gravou tudo desta categoria. 🔥<br>Desmarque algumas ou mude o filtro.</div>';cur=-1;stats();return}
+  cur=p[Math.floor(Math.random()*p.length)];
+  cardEl.innerHTML=cardHTML(cur,false);
+  stats();
+}
+function renderList(){
+  let h='';
+  if(S.ideas.length&&!filter){
+    h+=`<div class="group-h" style="color:#4ade80">💡 Ideias do time<small>${S.ideas.length}</small></div><div class="rows">`;
+    S.ideas.forEach((id,ix)=>{
+      h+=`<div class="row" style="border-left-color:#4ade80" tabindex="0">
+        <div class="body"><p>${esc(id.txt)}</p><div class="by">por ${esc(id.by)} · ${esc(id.dt)}${id.cat?` · sugerida para ${CATS[id.cat]?CATS[id.cat].n:esc(id.cat)}`:''}</div></div>
+        <span class="m" data-del="${ix}" style="cursor:pointer;padding:4px 6px">✕</span></div>`;
+    });
+    h+=`</div>`;
+  }
+  for(const c in CATS){
+    const items=DATA.map((d,i)=>i).filter(i=>DATA[i][0]===c&&(!filter||filter===c));
+    if(!items.length)continue;
+    const done=items.filter(i=>S.used.includes(i)).length;
+    h+=`<div class="group-h">${CATS[c].n}<small>${items.length} ignições${done?` · ${done} gravadas`:''}</small></div><div class="rows">`;
+    for(const i of items){
+      const [,t,w]=DATA[i];
+      h+=`<div class="row ${S.used.includes(i)?'u':''}" data-i="${i}" tabindex="0">
+        <div class="body"><p>${t}</p>${w?`<div class="src">— ${w}</div>`:''}</div>
+        <span class="m">${S.fav.includes(i)?'<span class="fv">★</span>':''}${S.used.includes(i)?' ✓':''}</span></div>`;
+    }
+    h+=`</div>`;
+  }
+  listEl.innerHTML=h||'<div class="empty">Nada aqui.</div>';
+  listEl.querySelectorAll('.row[data-i]').forEach(r=>r.onclick=()=>{cur=+r.dataset.i;setView('draw');cardEl.innerHTML=cardHTML(cur,false);stats();});
+  listEl.querySelectorAll('[data-del]').forEach(s=>s.onclick=e=>{
+    e.stopPropagation();
+    if(confirm('Remover esta ideia?')){S.ideas.splice(+s.dataset.del,1);save();renderList();}
+  });
+}
+function setView(v){
+  view=v;
+  $('tabDraw').classList.toggle('on',v==='draw');
+  $('tabAll').classList.toggle('on',v==='all');
+  $('btnCal').classList.toggle('on',v==='cal');
+  document.querySelector('.tabs').classList.toggle('hidden',v==='cal');
+  document.querySelector('.chipwrap').classList.toggle('hidden',v==='cal');
+  $('stage').classList.toggle('hidden',v!=='draw');
+  listEl.classList.toggle('hidden',v!=='all');
+  $('cal').classList.toggle('hidden',v!=='cal');
+  if(v==='all')renderList();
+  if(v==='cal')renderCal();
+}
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function weekScore(){
+  const now=new Date(), dow=now.getDay()||7, mon=new Date(now); mon.setDate(now.getDate()-(dow-1));
+  let done=0;
+  for(let i=0;i<5;i++){const d=new Date(mon); d.setDate(mon.getDate()+i); const a=S.days[iso(d)]; if(a&&a.st>=1)done++;}
+  return done;
+}
+function reserva(){return Object.values(S.days).filter(a=>a&&a.st===2).length}
+function renderCal(){
+  const y=calRef.getFullYear(), m=calRef.getMonth();
+  const first=new Date(y,m,1), start=(first.getDay()+6)%7, nd=new Date(y,m+1,0).getDate();
+  const today=iso(new Date());
+  let h=`<div class="cal-head"><h2>${MESES[m]} ${y}</h2>
+    <div class="cal-nav"><button id="calPrev" aria-label="Mês anterior">‹</button><button id="calNext" aria-label="Próximo mês">›</button></div></div>
+    <div class="cal-streak">Esta semana: <b>${weekScore()}/5 gravações</b> · reserva: <b>${reserva()} prontos</b></div>
+    <div class="actions" style="margin:0 0 10px">
+      <button class="act draw" id="wizBtn">📋 Planejar a semana</button>
+    </div>
+    <div class="cal-streak" id="syncBar" style="margin-bottom:14px">${syncBarHTML()}</div>
+    <div class="cal-grid">`;
+  for(const w of ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'])h+=`<div class="cal-wd">${w}</div>`;
+  for(let i=0;i<start;i++)h+=`<div></div>`;
+  for(let d=1;d<=nd;d++){
+    const dt=new Date(y,m,d), k=iso(dt), a=S.days[k], dow=dt.getDay(), wk=(dow===0||dow===6);
+    const pil=a&&a.p?PILARES[a.p]:null;
+    const nSug=a&&a.sug?a.sug.length:0;
+    const label=a&&a.t?a.t:(nSug&&pil?`${pil.s} · ${nSug}💡`:(pil?pil.n:(wk?'Livre · stories':'—')));
+    const stch=a&&a.st>=0?['◇','●','◆','✓'][a.st]:'';
+    h+=`<div class="cal-d ${wk&&!a?'free':''} ${k===today?'today':''} ${a&&a.st===3?'done':''}" data-k="${k}"
+      ${pil?`style="border-left:3px solid ${pil.c}"`:''}>
+      <span class="n">${d}</span><span class="tag" ${pil?`style="color:${pil.c}"`:''}>${esc(label)}</span>
+      ${stch?`<span class="stb" style="color:${a.st===1?'#4ade80':(pil?pil.c:'var(--muted)')}">${stch}</span>`:''}
+      ${a&&a.video?`<span class="ok" style="top:4px;bottom:auto">📹</span>`:''}</div>`;
+  }
+  h+=`</div><div class="cal-legend">
+    <div class="lg"><b>Pipeline:</b> ◇ planejado · <span style="color:#4ade80">●</span> gravado · ◆ editado (pronto) · ✓ publicado · 📹 vídeo no Drive</div>
+    <div class="lg"><b>Pilares:</b> ${Object.values(PILARES).map(p=>`<span style="color:${p.c}">${p.n}</span>`).join(' · ')}</div>
+  </div>`;
+  $('cal').innerHTML=h;
+  $('calPrev').onclick=()=>{calRef=new Date(y,m-1,1);renderCal()};
+  $('calNext').onclick=()=>{calRef=new Date(y,m+1,1);renderCal()};
+  const wb=$('wizBtn'); if(wb)wb.onclick=planWeek;
+  wireSyncBar();
+  $('cal').querySelectorAll('.cal-d').forEach(el=>el.onclick=()=>dayPanel(el.dataset.k));
+}
+// Banco de ideias: sorteia mix de temas (💡) e ignições (🔥) escritos para o pilar
+function bancoIdeias(pilar,n,excl){
+  const sh=a=>[...a].sort(()=>Math.random()-.5);
+  const ok=j=>IDEIAS[j][0]===pilar&&!(excl||[]).includes(j);
+  const te=sh(IDEIAS.map((x,j)=>j).filter(j=>ok(j)&&IDEIAS[j][1]==='t'));
+  const ig=sh(IDEIAS.map((x,j)=>j).filter(j=>ok(j)&&IDEIAS[j][1]==='i'));
+  const out=[];
+  while(out.length<n&&(te.length||ig.length)){
+    if(te.length)out.push(te.shift());
+    if(out.length<n&&ig.length)out.push(ig.shift());
+  }
+  return out;
+}
+function ideiaHTML(j,selTxt){
+  const tp=IDEIAS[j][1], tx=IDEIAS[j][2];
+  return `<div class="sug ${selTxt===tx?'on':''}" data-j="${j}">${tp==='t'?'💡':'🔥'} ${tx}</div>`;
+}
+function planWeek(){
+  const now=new Date(), dow=now.getDay()||7;
+  const mon=new Date(now); mon.setDate(now.getDate()-(dow-1));
+  const nextMon=new Date(mon); nextMon.setDate(mon.getDate()+7);
+  const wiz=document.createElement('div');wiz.className='wiz';
+  document.body.appendChild(wiz);
+  const kill=()=>wiz.remove();
+  const closeWiz=()=>{if(plano.some(p=>p&&p.p)&&!confirm('Sair sem salvar a semana montada?'))return;kill()};
+  const DIAS=['Segunda','Terça','Quarta','Quinta','Sexta'];
+  let base=null, plano=[], step=-1;
+
+  const start=()=>{
+    wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>📋 Planejar a semana</h2>
+      <button class="focus-close" id="wz-x">✕</button></div>
+      <p class="wiz-q">Qual semana vamos montar? Dia a dia: pilar → ideia. Rapidinho.</p>
+      <button class="pbtn" style="max-width:none;margin-bottom:10px" id="wz-esta">Esta semana (${String(mon.getDate()).padStart(2,'0')}/${String(mon.getMonth()+1).padStart(2,'0')})</button>
+      <button class="pbtn" style="max-width:none" id="wz-prox">Próxima semana (${String(nextMon.getDate()).padStart(2,'0')}/${String(nextMon.getMonth()+1).padStart(2,'0')})</button></div>`;
+    wiz.querySelector('#wz-x').onclick=closeWiz;
+    wiz.querySelector('#wz-esta').onclick=()=>{base=mon;step=0;dia()};
+    wiz.querySelector('#wz-prox').onclick=()=>{base=nextMon;step=0;dia()};
+  };
+
+  const dia=()=>{
+    if(step>=5)return resumo();
+    const d=new Date(base); d.setDate(base.getDate()+step);
+    const k=iso(d), a=S.days[k]||{};
+    let sel={p:a.p||null,sug:(a.sug||(a.t?[a.t]:[])).slice()};
+    let bank=[], excl=[];
+    const paint=()=>{
+      const outras=sel.sug.filter(s=>!bank.some(j=>IDEIAS[j][2]===s));
+      wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>📋 Semana</h2><button class="focus-close" id="wz-x">✕</button></div>
+        <div class="wiz-prog">Dia ${step+1} de 5</div>
+        <div class="wiz-day" style="${sel.p?`color:${PILARES[sel.p].c}`:''}">${DIAS[step]} · ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</div>
+        <p class="wiz-q">1. Pilar do dia:</p>
+        <div class="pilar-row">${Object.entries(PILARES).map(([key,p])=>
+          `<button class="pilar-b ${sel.p===key?'on':''}" data-p="${key}"
+            style="${sel.p===key?`background:${p.c};border-color:${p.c}`:`color:${p.c};border-color:${p.c}55`}">${p.n}</button>`).join('')}</div>
+        ${sel.p?`<p class="wiz-q">2. Banco de ideias — marque as sugestões do dia (quem grava escolhe uma) <button class="wiz-skip" id="wz-mais">🎲 outras</button>:</p>
+          <div id="wz-sugs">${bank.map(j=>`<div class="sug ${sel.sug.includes(IDEIAS[j][2])?'on':''}" data-j="${j}">${IDEIAS[j][1]==='t'?'💡':'🔥'} ${IDEIAS[j][2]}</div>`).join('')}</div>
+          <input class="tema-sel" id="wz-livre" placeholder="✍️ ou escreva uma sugestão e dê Enter…">
+          ${outras.length?`<p class="wiz-q">Também selecionadas (toque para remover):</p>
+          <div>${outras.map((s,ix)=>`<div class="sug on" data-rm="${ix}">✕ ${esc(s)}</div>`).join('')}</div>`:''}
+          ${sel.sug.length?`<p class="wiz-q">✅ ${sel.sug.length} sugest${sel.sug.length>1?'ões':'ão'} pro dia</p>`:''}`:''}
+        <div class="actions">${sel.p?`<button class="act draw" id="wz-next">${step<4?'Próximo dia →':'Fechar semana →'}</button>`:''}
+          <button class="act" id="wz-pular" style="flex:.5">Pular dia</button></div>
+      </div>`;
+      wiz.querySelector('#wz-x').onclick=closeWiz;
+      const keepLivre=()=>{const lv0=wiz.querySelector('#wz-livre');if(lv0){const v0=lv0.value.trim();if(v0&&!sel.sug.includes(v0))sel.sug=[...sel.sug,v0]}};
+      wiz.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{keepLivre();sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];paint()});
+      const ms=wiz.querySelector('#wz-mais'); if(ms)ms.onclick=()=>{keepLivre();let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);paint()};
+      wiz.querySelectorAll('.sug[data-j]').forEach(s=>s.onclick=()=>{keepLivre();
+        const tx=IDEIAS[+s.dataset.j][2];
+        sel.sug=sel.sug.includes(tx)?sel.sug.filter(x=>x!==tx):[...sel.sug,tx];paint()});
+      wiz.querySelectorAll('.sug[data-rm]').forEach(s=>s.onclick=()=>{
+        sel.sug=sel.sug.filter(x=>x!==outras[+s.dataset.rm]);paint()});
+      const lv=wiz.querySelector('#wz-livre'); if(lv)lv.onchange=()=>{
+        const v=lv.value.trim(); if(v&&!sel.sug.includes(v)){sel.sug=[...sel.sug,v];paint()}};
+      const nx2=wiz.querySelector('#wz-next'); if(nx2)nx2.onclick=()=>{
+        const lv2=wiz.querySelector('#wz-livre'), v2=lv2?lv2.value.trim():'';
+        if(v2&&!sel.sug.includes(v2))sel.sug=[...sel.sug,v2];
+        plano[step]={k,p:sel.p,sug:sel.sug};step++;dia()};
+      const pl=wiz.querySelector('#wz-pular'); if(pl)pl.onclick=()=>{plano[step]=null;step++;dia()};
+    };
+    if(sel.p){bank=bancoIdeias(sel.p,4,[]);excl=[...bank];}
+    paint();
+  };
+
+  const resumo=()=>{
+    wiz.innerHTML=`<div class="wiz-in"><div class="wiz-top"><h2>✅ Semana montada</h2><button class="focus-close" id="wz-x">✕</button></div>
+      ${plano.map((p,i)=>p?`<div class="wiz-sum"><b style="color:${PILARES[p.p].c}">${DIAS[i]} · ${PILARES[p.p].n}</b><br>
+        ${p.sug&&p.sug.length?p.sug.map(s=>`<span style="color:var(--muted)">· ${esc(s)}</span>`).join('<br>'):'(sem sugestões)'}</div>`:`<div class="wiz-sum" style="color:var(--dim)">${DIAS[i]} · sem mudança</div>`).join('')}
+      <div class="actions"><button class="act draw" id="wz-save">Salvar no calendário</button></div></div>`;
+    wiz.querySelector('#wz-x').onclick=closeWiz;
+    wiz.querySelector('#wz-save').onclick=()=>{
+      plano.forEach(p=>{if(p&&p.p){const old=S.days[p.k]||{};
+        S.days[p.k]={...old,p:p.p,sug:p.sug||[],st:old.st!==undefined?old.st:0,t:old.st>=1?old.t:'',by:S.user||old.by||null};}});
+      save();publicar();kill();renderCal();renderAlert();
+    };
+  };
+  start();
+}
+function dayPanel(k,mode){
+  const a=S.days[k]||{};
+  let sel={p:a.p||null,sug:(a.sug||(a.t?[a.t]:[])).slice(),t:a.t||'',st:a.st!==undefined?a.st:0,by:a.by||null,video:a.video||''};
+  let md=mode||((S.user==='PH'&&sel.p&&sel.sug.length&&sel.st===0)?'rec':'plan');
+  let clean=JSON.stringify(sel);
+  const [yy,mm,dd]=k.split('-');
+  const scrim=document.createElement('div');scrim.className='scrim';
+  const panel=document.createElement('div');panel.className='day-panel';
+  let bank=[], excl=[];
+  if(sel.p){bank=bancoIdeias(sel.p,4,[]);excl=[...bank];}
+  const persist=extra=>{S.days[k]={...a,p:sel.p,sug:sel.sug,t:sel.t,st:sel.st,by:sel.by,video:sel.video,...(extra||{})};save();clean=JSON.stringify(sel);publicar();};
+  const render=()=>{
+    const pil=sel.p?PILARES[sel.p]:null;
+    const hasPlan=!!(sel.p&&sel.sug.length);
+    const outras=sel.sug.filter(s=>!bank.some(j=>IDEIAS[j][2]===s));
+    const vlink=sel.video&&/^https?:\/\//.test(sel.video);
+    const videoBlock=sel.st>=1?`
+      <div class="cats">📹 Vídeo do card${vlink?` — <a href="${esc(sel.video)}" target="_blank" rel="noopener" style="color:var(--ember)">▶ abrir no Drive</a>`:sel.video?` — ⚠️ cole a URL completa (https://…)`:` — suba no Drive e cole o link aqui:`}</div>
+      ${driveUrl()?`<div style="margin:-4px 0 8px"><a href="${esc(driveUrl())}" target="_blank" rel="noopener" class="wiz-skip">📁 Abrir pasta do Drive</a></div>`:''}
+      <input class="tema-sel" id="dpVideo" placeholder="🔗 cole o link do vídeo no Drive…" value="${esc(sel.video||'')}">`:'';
+    const tabs=`<div class="wiz-top" style="margin-bottom:6px"><div class="mode" style="margin:0">${dd}/${mm} · ${md==='rec'?'gravação':'planejamento'}</div>
+      <button class="focus-close" id="dpX" style="position:static" aria-label="Fechar">✕</button></div>
+      <div class="st-row">
+      <button class="st-b ${md==='plan'?'on':''}" id="dpTabPlan">📝 Planejar</button>
+      <button class="st-b ${md==='rec'?'on':''}" id="dpTabRec" style="${hasPlan?'':'opacity:.45'}">🎬 Gravar</button></div>`;
+    const planBody=`
+      <div class="pilar-row">${Object.entries(PILARES).map(([key,p])=>
+        `<button class="pilar-b ${sel.p===key?'on':''}" data-p="${key}"
+          style="${sel.p===key?`background:${p.c};border-color:${p.c}`:`color:${p.c};border-color:${p.c}55`}">${p.n}</button>`).join('')}
+      </div>
+      ${sel.p?`<div class="cats">💡 Banco de ideias · ${pil.n} <button class="wiz-skip" id="dpMais">🎲 outras</button><br>
+        <small>Toque para marcar quantas quiser — quem grava escolhe uma delas na hora.</small></div>
+      <div id="dpIdeias">${bank.map(j=>`<div class="sug ${sel.sug.includes(IDEIAS[j][2])?'on':''}" data-j="${j}">${IDEIAS[j][1]==='t'?'💡':'🔥'} ${IDEIAS[j][2]}</div>`).join('')}</div>
+      <input class="tema-sel" id="dpLivre" placeholder="✍️ ou escreva uma sugestão e dê Enter…">
+      ${outras.length?`<div class="cats">Também selecionadas (toque para remover):</div>
+      <div>${outras.map((s,ix)=>`<div class="sug on" data-rm="${ix}">✕ ${esc(s)}</div>`).join('')}</div>`:''}
+      ${sel.sug.length?`<div class="cats">✅ ${sel.sug.length} sugest${sel.sug.length>1?'ões':'ão'} pro dia</div>`:''}
+      <div class="st-row">${STATUS.map((s,i)=>`<button class="st-b ${sel.st===i?'on':''}" data-st="${i}">${s}</button>`).join('')}</div>
+      ${videoBlock}
+      <div class="actions">
+        <button class="act draw" id="dpIgn">🔥 Ver ignições do pilar</button>
+        <button class="act" id="dpSave">Salvar</button>
+        <button class="act" id="dpClear" style="flex:.6">🗑</button>
+      </div>`:`<div class="cats">Escolha o pilar do dia para planejar.</div>`}`;
+    const recBody=`
+      ${pil?`<div class="cats" style="color:${pil.c};font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-weight:700">${pil.n}${sel.by?` · agenda por ${esc(sel.by)}`:''}</div>`:''}
+      <div class="cats">🎬 Sugestões pra gravar — escolha uma:</div>
+      <div>${sel.sug.map((s,ix)=>`<div class="sug ${sel.t===s?'on':''}" data-pk="${ix}">${sel.t===s?'🎥 ':''}${esc(s)}</div>`).join('')||'<div class="cats">Sem sugestões ainda — use a aba Planejar.</div>'}</div>
+      <input class="tema-sel" id="recLivre" placeholder="✍️ ou grave outra ideia…" value="${esc(sel.t&&!sel.sug.includes(sel.t)?sel.t:'')}">
+      ${sel.st>=1?`<div class="cats" style="color:#4ade80">● Gravada${sel.st>1?` — status atual: ${STATUS[sel.st].toLowerCase()}`:''}.</div>`:''}
+      ${videoBlock}
+      <div class="actions">
+        <button class="act draw" id="recDone" style="${sel.t?'':'opacity:.5'}">${sel.st>=1?'✓ Gravada':'✅ Gravei essa'}</button>
+      </div>`;
+    panel.innerHTML=`${tabs}${md==='rec'?recBody:planBody}`;
+    const px=panel.querySelector('#dpX'); if(px)px.onclick=()=>{if(JSON.stringify(sel)!==clean&&!confirm('Fechar sem salvar as mudanças?'))return;close()};
+    const keepLivre=()=>{const lv0=panel.querySelector('#dpLivre');if(lv0){const v0=lv0.value.trim();if(v0&&!sel.sug.includes(v0))sel.sug=[...sel.sug,v0]}};
+    const tp=panel.querySelector('#dpTabPlan'); if(tp)tp.onclick=()=>{keepLivre();md='plan';render()};
+    const tr=panel.querySelector('#dpTabRec'); if(tr)tr.onclick=()=>{
+      if(!hasPlan){alert('Planeje o dia primeiro: escolha o pilar e marque sugestões.');return}
+      keepLivre();md='rec';render()};
+    panel.querySelectorAll('.pilar-b').forEach(b=>b.onclick=()=>{keepLivre();sel.p=b.dataset.p;bank=bancoIdeias(sel.p,4,[]);excl=[...bank];render()});
+    const ms=panel.querySelector('#dpMais'); if(ms)ms.onclick=()=>{keepLivre();let nx=bancoIdeias(sel.p,4,excl);if(!nx.length){excl=[];nx=bancoIdeias(sel.p,4,[])}bank=nx;excl=excl.concat(nx);render()};
+    panel.querySelectorAll('.sug[data-j]').forEach(s=>s.onclick=()=>{keepLivre();
+      const tx=IDEIAS[+s.dataset.j][2];
+      sel.sug=sel.sug.includes(tx)?sel.sug.filter(x=>x!==tx):[...sel.sug,tx];render()});
+    panel.querySelectorAll('.sug[data-rm]').forEach(s=>s.onclick=()=>{
+      sel.sug=sel.sug.filter(x=>x!==outras[+s.dataset.rm]);render()});
+    panel.querySelectorAll('.sug[data-pk]').forEach(s=>s.onclick=()=>{sel.t=sel.sug[+s.dataset.pk];render()});
+    const liv=panel.querySelector('#dpLivre'); if(liv)liv.onchange=()=>{
+      const v=liv.value.trim(); if(v&&!sel.sug.includes(v)){sel.sug=[...sel.sug,v];render()}};
+    const rlv=panel.querySelector('#recLivre'); if(rlv)rlv.onchange=()=>{if(rlv.value.trim()){sel.t=rlv.value.trim();render()}};
+    panel.querySelectorAll('.st-b[data-st]').forEach(b=>b.onclick=()=>{sel.st=+b.dataset.st;render()});
+    const ign=panel.querySelector('#dpIgn'); if(ign)ign.onclick=()=>{
+      const cats=PILARES[sel.p].cats;
+      const p2=DATA.map((d,i)=>i).filter(i=>cats.includes(DATA[i][0])&&!S.used.includes(i));
+      persist();
+      close();setView('draw');
+      if(p2.length){cur=p2[Math.floor(Math.random()*p2.length)];cardEl.innerHTML=cardHTML(cur,false);stats();}
+      window.scrollTo({top:0});
+    };
+    const sv=panel.querySelector('#dpSave'); if(sv)sv.onclick=()=>{
+      const lv=panel.querySelector('#dpLivre');
+      if(lv&&lv.value.trim()&&!sel.sug.includes(lv.value.trim()))sel.sug=[...sel.sug,lv.value.trim()];
+      persist({by:S.user||sel.by});close();renderCal();renderAlert()};
+    const vd=panel.querySelector('#dpVideo'); if(vd)vd.onchange=()=>{sel.video=vd.value.trim();persist();renderCal();render()};
+    const dn=panel.querySelector('#recDone'); if(dn)dn.onclick=()=>{
+      const rl=panel.querySelector('#recLivre'); if(rl&&rl.value.trim())sel.t=rl.value.trim();
+      if(!sel.t){alert('Escolha uma sugestão (ou escreva a sua) antes de marcar como gravada.');return}
+      sel.st=Math.max(sel.st,1);persist();renderCal();renderAlert();render()};
+    const cl=panel.querySelector('#dpClear'); if(cl)cl.onclick=()=>{
+      if(!confirm('Apagar o planejamento deste dia? (some da agenda oficial de todo mundo)'))return;
+      delete S.days[k];(S.del=S.del||[]).push(k);save();publicar();close();renderCal();renderAlert()};
+  };
+  const close=()=>{scrim.remove();panel.remove()};
+  scrim.onclick=()=>{if(JSON.stringify(sel)!==clean&&!confirm('Fechar sem salvar as mudanças?'))return;close()};
+  document.body.append(scrim,panel);
+  render();
+}
+// ————— AGENDA OFICIAL COMPARTILHADA —————
+// Fonte única: uma linha (id=1) na tabela "agenda" do Supabase. Todo aparelho lê ao abrir
+// e escreve direto — sem token, sem modo leitura. Todos veem o mesmo planejamento.
+let syncInfo={state:'conectando…',at:null,rev:S.lastRev||0};
+function sanitizeDay(d){
+  if(!d||typeof d!=='object'||!PILARES[d.p])return null;
+  const st=Math.min(3,Math.max(0,parseInt(d.st,10)||0));
+  const sug=Array.isArray(d.sug)?d.sug.filter(s=>typeof s==='string'&&s.trim()).map(s=>s.trim()).slice(0,20):[];
+  return {p:d.p,st,sug,t:typeof d.t==='string'?d.t:'',by:typeof d.by==='string'?d.by.slice(0,40):null,video:typeof d.video==='string'?d.video:''};
+}
+function sanitizeAgenda(a){
+  const out={days:{},ideas:[],rev:parseInt(a&&a.rev,10)||0,updatedAt:(a&&typeof a.updatedAt==='string')?a.updatedAt:null,by:(a&&typeof a.by==='string')?a.by.slice(0,40):null};
+  for(const k of Object.keys((a&&a.days)||{})){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(k))continue;
+    const d=sanitizeDay(a.days[k]); if(d)out.days[k]=d;
+  }
+  out.ideas=(Array.isArray(a&&a.ideas)?a.ideas:[]).filter(i=>i&&typeof i.txt==='string'&&i.txt.trim())
+    .map(i=>({txt:i.txt,cat:CATS[i.cat]?i.cat:null,by:typeof i.by==='string'?i.by.slice(0,40):'?',dt:typeof i.dt==='string'?i.dt.slice(0,10):''}));
+  return out;
+}
+function mergeDays(baseDays,mineDays){ // união campo a campo — nunca perde dado
+  const out={...baseDays};
+  for(const k of Object.keys(mineDays||{})){
+    const inc=sanitizeDay(mineDays[k]); if(!inc)continue;
+    const loc=out[k];
+    if(!loc){out[k]=inc;continue}
+    out[k]={...loc,
+      p:(inc.st>(loc.st||0)?inc.p:loc.p||inc.p),
+      st:Math.max(loc.st||0,inc.st),
+      sug:[...(loc.sug||[]),...(inc.sug||[]).filter(s=>!(loc.sug||[]).includes(s))],
+      t:loc.t||inc.t, video:loc.video||inc.video, by:loc.by||inc.by};
+  }
+  return out;
+}
+function mergeIdeas(base,mine){
+  const have=new Set(base.map(i=>i.txt));
+  return [...base,...(mine||[]).filter(i=>i&&i.txt&&!have.has(i.txt))];
+}
+// ————— LOGIN (Supabase Auth): 3 contas fixas do time, sem cadastro aberto —————
+const CONTAS={PH:'ph@ignicao.ph',Fabiano:'fabiano@ignicao.ph',Rodrigo:'rodrigo@ignicao.ph'};
+const supaHeaders=()=>({apikey:SUPA_KEY,Authorization:'Bearer '+((S.auth&&S.auth.access)||SUPA_KEY)});
+async function authLogin(nome,senha){
+  const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=password',{method:'POST',
+    headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({email:CONTAS[nome],password:senha})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){
+    if(j.error_code==='email_not_confirmed')throw new Error('Conta criada, mas ainda não liberada no painel do Supabase — checklist SEGURANCA.md no repositório.');
+    throw new Error('Senha incorreta.');
+  }
+  S.auth={access:j.access_token,refresh:j.refresh_token,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600)-60,email:CONTAS[nome]};
+  S.user=nome;save();
+  return true;
+}
+async function authRefresh(){
+  if(!S.auth)return false;
+  if(S.auth.exp>Math.floor(Date.now()/1000))return true;
+  try{
+    const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
+      headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:S.auth.refresh})});
+    if(!r.ok)throw 0;
+    const j=await r.json();
+    S.auth={access:j.access_token,refresh:j.refresh_token,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600)-60,email:S.auth.email};
+    save();return true;
+  }catch(e){delete S.auth;save();return false}
+}
+function authLogout(){delete S.auth;S.user=null;save();$('userChip').textContent='👤';loginScreen();}
+async function fetchAgenda(){
+  try{
+    await authRefresh();
+    const r=await fetch(AGENDA_ENDPOINT+'?id=eq.1&select=data',{headers:supaHeaders()});
+    if(!r.ok)throw 0;
+    const rows=await r.json();
+    const data=(Array.isArray(rows)&&rows[0]&&rows[0].data)?rows[0].data:{days:{},ideas:[],rev:0};
+    return {agenda:sanitizeAgenda(data)};
+  }catch(e){return null}
+}
+function applyRemote(agenda){
+  if(agenda.rev<1){ // ninguém publicou ainda — mantém o local deste aparelho
+    syncInfo={state:'pronto — salve algo para começar',at:agenda.updatedAt,rev:agenda.rev};
+    return;
+  }
+  // União com o remoto — nunca sobrescreve dado local que ainda não subiu.
+  let d2=mergeDays(agenda.days,S.days);
+  (S.del||[]).forEach(k=>delete d2[k]);
+  S.days=d2;
+  S.ideas=mergeIdeas(agenda.ideas,S.ideas);
+  S.lastRev=agenda.rev;save();
+  syncInfo={state:'✅ sincronizado',at:agenda.updatedAt,rev:agenda.rev};
+}
+async function syncNow(){
+  const got=await fetchAgenda();
+  if(!got){syncInfo.state='sem conexão — mostrando a cópia deste aparelho';renderSyncBar();return}
+  applyRemote(got.agenda);
+  if(view==='cal')renderCal();else if(view==='all')renderList();
+  stats();renderAlert();renderSyncBar();
+}
+let pubTimer=null;
+function publicar(){clearTimeout(pubTimer);pubTimer=setTimeout(doPublish,800);}
+async function doPublish(retry){
+  syncInfo.state='publicando…';renderSyncBar();
+  const got=await fetchAgenda();
+  const base=(got&&got.agenda.rev>=1)?got.agenda:{days:{},ideas:[],rev:got?got.agenda.rev:0};
+  const days=mergeDays(base.days,S.days);
+  (S.del||[]).forEach(k=>delete days[k]);
+  const ideas=mergeIdeas(base.ideas,S.ideas);
+  const rev=(base.rev||0)+1;
+  const data={days,ideas,rev,updatedAt:new Date().toISOString(),by:S.user||null};
+  try{
+    const r=await fetch(AGENDA_ENDPOINT,{method:'POST',
+      headers:{...supaHeaders(),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({id:1,data})});
+    if(r.status===409&&!retry)return doPublish(true);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    S.days=days;S.ideas=ideas;S.del=[];S.lastRev=rev;save();
+    syncInfo={state:'✅ sincronizado',at:data.updatedAt,rev};
+  }catch(e){
+    syncInfo.state='⚠️ falha ao publicar — mudanças guardadas neste aparelho';
+    if(/401|403|404/.test(String(e)))alert('Não consegui publicar. Confira se SUPA_URL e SUPA_KEY estão corretos e se as permissões (RLS) da tabela permitem escrita.');
+  }
+  renderSyncBar();
+  if(view==='cal')renderCal();
+  renderAlert();
+}
+const fmtHora=iso2=>{try{const d=new Date(iso2);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}catch(e){return''}};
+function syncBarHTML(){
+  return `☁️ <b>Agenda oficial</b> · ${syncInfo.state}${syncInfo.at?` · ${fmtHora(syncInfo.at)}`:''}
+    <button class="wiz-skip" id="syncRefresh">🔄 atualizar</button>`;
+}
+function wireSyncBar(){
+  const r=$('syncRefresh'); if(r)r.onclick=()=>{syncInfo.state='atualizando…';renderSyncBar();syncNow()};
+}
+function renderSyncBar(){const el=$('syncBar'); if(el){el.innerHTML=syncBarHTML();wireSyncBar();}}
+// Acesso ao Drive: usa o link oficial (DRIVE_URL) ou o configurado neste aparelho (S.drive)
+const driveUrl=()=>DRIVE_URL||S.drive||'';
+$('btnDrive').onclick=()=>{
+  const u=driveUrl();
+  if(u){window.open(u,'_blank','noopener');return}
+  const v=prompt('Cole o link da pasta do Drive dos vídeos:');
+  if(!v)return;
+  const url=v.trim();
+  if(!/^https?:\/\//.test(url)){alert('Link inválido — cole a URL completa (https://…)');return}
+  S.drive=url;save();window.open(url,'_blank','noopener');
+};
+// Alerta: hoje tem conteúdo planejado pra gravar
+function renderAlert(){
+  const el=$('alert'); if(!el)return;
+  const now=new Date(), dow=now.getDay()||7, mon=new Date(now); mon.setDate(now.getDate()-(dow-1));
+  const hoje=iso(now), DIAS3=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const pend=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(mon); d.setDate(mon.getDate()+i);
+    const k=iso(d); if(k>hoje)break;
+    const a=S.days[k], n=a&&a.sug?a.sug.length:(a&&a.t?1:0);
+    if(a&&a.p&&a.st===0&&n)pend.push({k,a,hoje:k===hoje,dia:DIAS3[d.getDay()]});
+  }
+  if(!pend.length){el.innerHTML='';return}
+  const first=pend.find(p=>p.hoje)||pend[0];
+  const label=pend.map(p=>`${p.hoje?'Hoje':p.dia} (${PILARES[p.a.p].n})`).join(' · ');
+  el.innerHTML=`<div class="alertbar"><div class="tx">🎬 <b>Pra gravar:</b> ${esc(label)}</div>
+    <button class="act draw" id="alertGo" style="flex:0 0 auto;padding:10px 14px;font-size:12px">Escolher e gravar</button></div>`;
+  $('alertGo').onclick=()=>dayPanel(first.k,'rec');
+}
+$('btnDraw').onclick=draw;
+$('btnUsed').onclick=()=>{if(cur<0)return;S.used.includes(cur)?S.used=S.used.filter(x=>x!==cur):S.used.push(cur);save();stats();};
+$('btnFav').onclick=()=>{if(cur<0)return;S.fav.includes(cur)?S.fav=S.fav.filter(x=>x!==cur):S.fav.push(cur);save();stats();};
+$('tabDraw').onclick=()=>setView('draw');
+$('tabAll').onclick=()=>setView('all');
+$('btnCal').onclick=()=>setView(view==='cal'?'all':'cal');
+cardEl.onclick=()=>{if(cur<0)return;
+  const o=document.createElement('div');o.className='focus-overlay';
+  o.innerHTML=cardHTML(cur,true)+'<button class="focus-close" aria-label="Fechar">✕</button>';
+  o.querySelector('.focus-close').onclick=e=>{e.stopPropagation();o.remove()};
+  o.onclick=()=>o.remove();document.body.appendChild(o);};
+cardEl.onkeydown=e=>{if(e.key==='Enter')cardEl.onclick()};
+
+// Perfis
+// Tela de login: 3 contas fixas — sem senha não entra, e não existe cadastro
+function loginScreen(){
+  if(document.querySelector('.profile-overlay'))return;
+  const o=document.createElement('div');o.className='profile-overlay';
+  let nome=null;
+  const paint=()=>{
+    o.innerHTML=`<h2>Ignição · PH</h2><p>${nome?`Senha de <b>${nome}</b>:`:'Quem está aí? Só o time entra.'}</p>
+      ${nome?`<input type="password" id="lgSenha" class="tema-sel" style="max-width:340px;text-align:center;font-size:18px" autocomplete="current-password">
+        <div id="lgErro" style="color:#fb7185;font-size:13px;min-height:18px;text-align:center;max-width:340px"></div>
+        <button class="pbtn" id="lgEntrar">Entrar</button>
+        <button class="wiz-skip" id="lgVoltar">← trocar usuário</button>`
+      :Object.keys(CONTAS).map(n=>`<button class="pbtn" data-n="${n}">${n}</button>`).join('')}`;
+    o.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{nome=b.dataset.n;paint();const i=o.querySelector('#lgSenha');if(i)i.focus()});
+    const vt=o.querySelector('#lgVoltar'); if(vt)vt.onclick=()=>{nome=null;paint()};
+    const et=o.querySelector('#lgEntrar'), inp=o.querySelector('#lgSenha');
+    const go=async()=>{
+      const err=o.querySelector('#lgErro');err.textContent='';et.textContent='Entrando…';
+      try{
+        await authLogin(nome,inp.value);
+        o.remove();
+        $('userChip').textContent='👤 '+S.user;
+        renderAlert();syncNow();
+      }catch(e){et.textContent='Entrar';err.textContent=e.message||'Não deu — tente de novo.'}
+    };
+    if(et)et.onclick=go;
+    if(inp)inp.onkeydown=e=>{if(e.key==='Enter')go()};
+  };
+  paint();
+  document.body.appendChild(o);
+}
+$('userChip').onclick=()=>{if(S.auth){if(confirm(`Sair da conta de ${S.user}?`))authLogout()}else loginScreen()};
+
+// Ideias do time
+const fab=document.createElement('button');fab.className='idea-fab';fab.textContent='+ Ideia';
+fab.onclick=()=>{
+  const scrim=document.createElement('div');scrim.className='scrim';
+  const md=document.createElement('div');md.className='idea-modal';
+  md.innerHTML=`<h3>💡 Nova ideia de ignição</h3>
+    <textarea id="ideaTxt" placeholder="Escreva a ideia: uma pergunta, tese, tema, citação…"></textarea>
+    <select class="tema-sel" id="ideaCat"><option value="">categoria sugerida (opcional)</option>
+      ${Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.n}</option>`).join('')}</select>
+    <div class="actions"><button class="act draw" id="ideaSave">Adicionar ao acervo</button></div>`;
+  const close=()=>{scrim.remove();md.remove()};
+  scrim.onclick=close;
+  document.body.append(scrim,md);
+  md.querySelector('#ideaSave').onclick=()=>{
+    const txt=md.querySelector('#ideaTxt').value.trim();
+    if(!txt)return;
+    const d=new Date();
+    S.ideas.unshift({txt,cat:md.querySelector('#ideaCat').value||null,by:S.user||'?',dt:`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`});
+    save();publicar();close();setView('all');
+  };
+};
+document.body.appendChild(fab);
+fab.style.display='';
+
+const arrow=$('chipArrow');
+arrow.onclick=()=>chipsEl.scrollBy({left:200});
+const arrowCheck=()=>arrow.classList.toggle('off',chipsEl.scrollLeft>=chipsEl.scrollWidth-chipsEl.clientWidth-8);
+chipsEl.addEventListener('scroll',arrowCheck);
+addEventListener('resize',arrowCheck);
+// Outra aba/janela salvou? Recarrega o estado em vez de sobrescrever com dados velhos (last-write-wins)
+function reloadState(raw){
+  try{S=JSON.parse(raw||localStorage.getItem(K)||'{"used":[],"fav":[]}')}catch(e){return}
+  S.days=S.days||{};for(const k in S.days){if(S.days[k]===true)S.days[k]={st:1}}
+  S.ideas=S.ideas||[];S.used=S.used||[];S.fav=S.fav||[];S.del=S.del||[];S.user=S.user||null;
+  if(view==='cal')renderCal();else if(view==='all')renderList();
+  stats();renderAlert();
+}
+addEventListener('storage',e=>{if(e.key===K)reloadState(e.newValue)});
+addEventListener('pageshow',e=>{if(e.persisted)reloadState()});
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow()});
+renderChips();draw();arrowCheck();renderAlert();
+if(S.auth){
+  $('userChip').textContent='👤 '+(S.user||'');
+  authRefresh().then(ok=>{if(ok)syncNow();else loginScreen()});
+}else loginScreen();
+// Semana ativa? Abre direto na agenda — é o que o time vem consultar
+(()=>{const now=new Date(),dow=now.getDay()||7,mon=new Date(now);mon.setDate(now.getDate()-(dow-1));
+  for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);
+    if(S.days[iso(d)]){setView('cal');return}}
+  setView('all');})();
+</script>
