@@ -951,9 +951,39 @@ function mergeIdeas(base,mine){
   const have=new Set(base.map(i=>i.txt));
   return [...base,...(mine||[]).filter(i=>i&&i.txt&&!have.has(i.txt))];
 }
-const supaHeaders=()=>({apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY});
+// ————— LOGIN (Supabase Auth): 3 contas fixas do time, sem cadastro aberto —————
+const CONTAS={PH:'ph@ignicao.ph',Fabiano:'fabiano@ignicao.ph',Rodrigo:'rodrigo@ignicao.ph'};
+const supaHeaders=()=>({apikey:SUPA_KEY,Authorization:'Bearer '+((S.auth&&S.auth.access)||SUPA_KEY)});
+async function authLogin(nome,senha){
+  const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=password',{method:'POST',
+    headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({email:CONTAS[nome],password:senha})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){
+    if(j.error_code==='email_not_confirmed')throw new Error('Conta criada, mas ainda não liberada no painel do Supabase — checklist SEGURANCA.md no repositório.');
+    throw new Error('Senha incorreta.');
+  }
+  S.auth={access:j.access_token,refresh:j.refresh_token,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600)-60,email:CONTAS[nome]};
+  S.user=nome;save();
+  return true;
+}
+async function authRefresh(){
+  if(!S.auth)return false;
+  if(S.auth.exp>Math.floor(Date.now()/1000))return true;
+  try{
+    const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
+      headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:S.auth.refresh})});
+    if(!r.ok)throw 0;
+    const j=await r.json();
+    S.auth={access:j.access_token,refresh:j.refresh_token,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600)-60,email:S.auth.email};
+    save();return true;
+  }catch(e){delete S.auth;save();return false}
+}
+function authLogout(){delete S.auth;S.user=null;save();$('userChip').textContent='👤';loginScreen();}
 async function fetchAgenda(){
   try{
+    await authRefresh();
     const r=await fetch(AGENDA_ENDPOINT+'?id=eq.1&select=data',{headers:supaHeaders()});
     if(!r.ok)throw 0;
     const rows=await r.json();
@@ -1061,15 +1091,37 @@ cardEl.onclick=()=>{if(cur<0)return;
 cardEl.onkeydown=e=>{if(e.key==='Enter')cardEl.onclick()};
 
 // Perfis
-function pickUser(force){
-  if(S.user&&!force){$('userChip').textContent='👤 '+S.user;return}
+// Tela de login: 3 contas fixas — sem senha não entra, e não existe cadastro
+function loginScreen(){
+  if(document.querySelector('.profile-overlay'))return;
   const o=document.createElement('div');o.className='profile-overlay';
-  o.innerHTML=`<h2>Quem está aí?</h2><p>Escolha seu perfil — tudo que você criar fica assinado por você.</p>
-    ${USERS.map(u=>`<button class="pbtn" data-u="${u}">${u}</button>`).join('')}`;
-  o.querySelectorAll('.pbtn').forEach(b=>b.onclick=()=>{S.user=b.dataset.u;save();$('userChip').textContent='👤 '+S.user;o.remove()});
+  let nome=null;
+  const paint=()=>{
+    o.innerHTML=`<h2>Ignição · PH</h2><p>${nome?`Senha de <b>${nome}</b>:`:'Quem está aí? Só o time entra.'}</p>
+      ${nome?`<input type="password" id="lgSenha" class="tema-sel" style="max-width:340px;text-align:center;font-size:18px" autocomplete="current-password">
+        <div id="lgErro" style="color:#fb7185;font-size:13px;min-height:18px;text-align:center;max-width:340px"></div>
+        <button class="pbtn" id="lgEntrar">Entrar</button>
+        <button class="wiz-skip" id="lgVoltar">← trocar usuário</button>`
+      :Object.keys(CONTAS).map(n=>`<button class="pbtn" data-n="${n}">${n}</button>`).join('')}`;
+    o.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{nome=b.dataset.n;paint();const i=o.querySelector('#lgSenha');if(i)i.focus()});
+    const vt=o.querySelector('#lgVoltar'); if(vt)vt.onclick=()=>{nome=null;paint()};
+    const et=o.querySelector('#lgEntrar'), inp=o.querySelector('#lgSenha');
+    const go=async()=>{
+      const err=o.querySelector('#lgErro');err.textContent='';et.textContent='Entrando…';
+      try{
+        await authLogin(nome,inp.value);
+        o.remove();
+        $('userChip').textContent='👤 '+S.user;
+        renderAlert();syncNow();
+      }catch(e){et.textContent='Entrar';err.textContent=e.message||'Não deu — tente de novo.'}
+    };
+    if(et)et.onclick=go;
+    if(inp)inp.onkeydown=e=>{if(e.key==='Enter')go()};
+  };
+  paint();
   document.body.appendChild(o);
 }
-$('userChip').onclick=()=>pickUser(true);
+$('userChip').onclick=()=>{if(S.auth){if(confirm(`Sair da conta de ${S.user}?`))authLogout()}else loginScreen()};
 
 // Ideias do time
 const fab=document.createElement('button');fab.className='idea-fab';fab.textContent='+ Ideia';
@@ -1112,7 +1164,11 @@ addEventListener('storage',e=>{if(e.key===K)reloadState(e.newValue)});
 addEventListener('pageshow',e=>{if(e.persisted)reloadState()});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow()});
-renderChips();draw();arrowCheck();pickUser(false);renderAlert();syncNow();
+renderChips();draw();arrowCheck();renderAlert();
+if(S.auth){
+  $('userChip').textContent='👤 '+(S.user||'');
+  authRefresh().then(ok=>{if(ok)syncNow();else loginScreen()});
+}else loginScreen();
 // Semana ativa? Abre direto na agenda — é o que o time vem consultar
 (()=>{const now=new Date(),dow=now.getDay()||7,mon=new Date(now);mon.setDate(now.getDate()-(dow-1));
   for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);
