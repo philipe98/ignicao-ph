@@ -572,6 +572,14 @@ const STATUS=['Planejado','Gravado','Editado','Publicado'];
 const USERS=['PH','Rodrigo','Fabiano'];
 const DRIVE_URL='https://drive.google.com/drive/folders/1iaJZ6OW2753g2zBYT2QKSwYuaUemHdHx'; // pasta oficial dos vídeos — vale para todo mundo
 
+// ————— SUPABASE (agenda compartilhada) —————
+// Cole aqui os 2 valores do seu projeto (Settings → API no painel do Supabase).
+// A "anon key" é pública por design (protegida por Row Level Security no banco),
+// então pode ficar aqui no front-end sem problema — diferente do token do GitHub.
+const SUPA_URL='https://sqoxidolxjmifziahfsz.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxb3hpZG9seGptaWZ6aWFoZnN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MjUyMzksImV4cCI6MjEwMjQwMTIzOX0.p7RVDFYNUNA25IzGXAhK3NsoYenzjjlToTUbaxetGuw';
+const AGENDA_ENDPOINT=SUPA_URL+'/rest/v1/agenda';
+
 const K='ignicao-ph-v1';
 let S=JSON.parse(localStorage.getItem(K)||'{"used":[],"fav":[]}');
 S.days=S.days||{};
@@ -678,9 +686,9 @@ function renderCal(){
   let h=`<div class="cal-head"><h2>${MESES[m]} ${y}</h2>
     <div class="cal-nav"><button id="calPrev" aria-label="Mês anterior">‹</button><button id="calNext" aria-label="Próximo mês">›</button></div></div>
     <div class="cal-streak">Esta semana: <b>${weekScore()}/5 gravações</b> · reserva: <b>${reserva()} prontos</b></div>
-    ${canEdit()?`<div class="actions" style="margin:0 0 10px">
+    <div class="actions" style="margin:0 0 10px">
       <button class="act draw" id="wizBtn">📋 Planejar a semana</button>
-    </div>`:''}
+    </div>
     <div class="cal-streak" id="syncBar" style="margin-bottom:14px">${syncBarHTML()}</div>
     <div class="cal-grid">`;
   for(const w of ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'])h+=`<div class="cal-wd">${w}</div>`;
@@ -818,18 +826,6 @@ function dayPanel(k,mode){
   if(sel.p){bank=bancoIdeias(sel.p,4,[]);excl=[...bank];}
   const persist=extra=>{S.days[k]={...a,p:sel.p,sug:sel.sug,t:sel.t,st:sel.st,by:sel.by,video:sel.video,...(extra||{})};save();clean=JSON.stringify(sel);publicar();};
   const render=()=>{
-    if(!canEdit()){ // modo leitura: quem edita a agenda oficial é quem tem a 🔑
-      const pilRO=sel.p?PILARES[sel.p]:null;
-      panel.innerHTML=`<div class="wiz-top" style="margin-bottom:6px"><div class="mode" style="margin:0">${dd}/${mm} · agenda</div>
-        <button class="focus-close" id="dpX" style="position:static" aria-label="Fechar">✕</button></div>
-        ${pilRO?`<div class="cats" style="color:${pilRO.c};font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-weight:700">${pilRO.n}${sel.by?` · agenda por ${esc(sel.by)}`:''}</div>`:'<div class="cats">Dia livre — nada planejado.</div>'}
-        ${sel.t?`<div class="cats">🎥 Ideia do dia: <b>${esc(sel.t)}</b></div>`:''}
-        ${sel.sug.length?`<div class="cats">Sugestões do dia:</div><div>${sel.sug.map(s=>`<div class="sug" style="cursor:default">${esc(s)}</div>`).join('')}</div>`:''}
-        ${pilRO?`<div class="cats">Status: ${STATUS[sel.st]||'—'}${sel.video&&/^https?:\/\//.test(sel.video)?` · <a href="${esc(sel.video)}" target="_blank" rel="noopener" style="color:var(--ember)">📹 abrir vídeo</a>`:''}</div>`:''}
-        <p class="hint" style="text-align:left;margin-top:10px">👁 Modo leitura — a agenda oficial é editada por quem tem a 🔑 (botão no Calendário).</p>`;
-      panel.querySelector('#dpX').onclick=close;
-      return;
-    }
     const pil=sel.p?PILARES[sel.p]:null;
     const hasPlan=!!(sel.p&&sel.sug.length);
     const outras=sel.sug.filter(s=>!bank.some(j=>IDEIAS[j][2]===s));
@@ -918,11 +914,8 @@ function dayPanel(k,mode){
   render();
 }
 // ————— AGENDA OFICIAL COMPARTILHADA —————
-// Fonte única: agenda.json no repositório (GitHub). Todo aparelho espelha ao abrir
-// (visualização igual pra todo mundo). Quem tem a 🔑 (Fabiano/PH) edita e publica
-// automaticamente; sem chave, o aparelho fica em modo leitura.
-const REPO_API='https://api.github.com/repos/philipe98/ignicao-ph/contents/agenda.json';
-const canEdit=()=>!!S.key;
+// Fonte única: uma linha (id=1) na tabela "agenda" do Supabase. Todo aparelho lê ao abrir
+// e escreve direto — sem token, sem modo leitura. Todos veem o mesmo planejamento.
 let syncInfo={state:'conectando…',at:null,rev:S.lastRev||0};
 function sanitizeDay(d){
   if(!d||typeof d!=='object'||!PILARES[d.p])return null;
@@ -958,39 +951,58 @@ function mergeIdeas(base,mine){
   const have=new Set(base.map(i=>i.txt));
   return [...base,...(mine||[]).filter(i=>i&&i.txt&&!have.has(i.txt))];
 }
-async function fetchAgenda(){
+// ————— LOGIN (Supabase Auth): 3 contas fixas do time, sem cadastro aberto —————
+const CONTAS={PH:'ph@ignicao.ph',Fabiano:'fabiano@ignicao.ph',Rodrigo:'rodrigo@ignicao.ph'};
+const supaHeaders=()=>({apikey:SUPA_KEY,Authorization:'Bearer '+((S.auth&&S.auth.access)||SUPA_KEY)});
+async function authLogin(nome,senha){
+  const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=password',{method:'POST',
+    headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({email:CONTAS[nome],password:senha})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){
+    if(j.error_code==='email_not_confirmed')throw new Error('Conta criada, mas ainda não liberada no painel do Supabase — checklist SEGURANCA.md no repositório.');
+    throw new Error('Senha incorreta.');
+  }
+  S.auth={access:j.access_token,refresh:j.refresh_token,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600)-60,email:CONTAS[nome]};
+  S.user=nome;save();
+  return true;
+}
+async function authRefresh(){
+  if(!S.auth)return false;
+  if(S.auth.exp>Math.floor(Date.now()/1000))return true;
   try{
-    const h={Accept:'application/vnd.github+json'};
-    if(S.key)h.Authorization='Bearer '+S.key;
-    const r=await fetch(REPO_API,{headers:h});
+    const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
+      headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:S.auth.refresh})});
     if(!r.ok)throw 0;
     const j=await r.json();
-    return {sha:j.sha,agenda:sanitizeAgenda(JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\s/g,''))))))};
-  }catch(e){
-    try{ // reserva: cópia servida pelo próprio site (pode atrasar 1-2 min após publicação)
-      const r2=await fetch('agenda.json?v='+Math.random());
-      if(!r2.ok)throw 0;
-      return {sha:null,agenda:sanitizeAgenda(await r2.json())};
-    }catch(_){return null}
-  }
+    S.auth={access:j.access_token,refresh:j.refresh_token,exp:Math.floor(Date.now()/1000)+(j.expires_in||3600)-60,email:S.auth.email};
+    save();return true;
+  }catch(e){delete S.auth;save();return false}
+}
+function authLogout(){delete S.auth;S.user=null;save();$('userChip').textContent='👤';loginScreen();}
+async function fetchAgenda(){
+  try{
+    await authRefresh();
+    const r=await fetch(AGENDA_ENDPOINT+'?id=eq.1&select=data',{headers:supaHeaders()});
+    if(!r.ok)throw 0;
+    const rows=await r.json();
+    const data=(Array.isArray(rows)&&rows[0]&&rows[0].data)?rows[0].data:{days:{},ideas:[],rev:0};
+    return {agenda:sanitizeAgenda(data)};
+  }catch(e){return null}
 }
 function applyRemote(agenda){
   if(agenda.rev<1){ // ninguém publicou ainda — mantém o local deste aparelho
-    syncInfo={state:canEdit()?'pronto — publique a 1ª agenda':'aguardando a 1ª publicação do Fabiano',at:agenda.updatedAt,rev:agenda.rev};
+    syncInfo={state:'pronto — salve algo para começar',at:agenda.updatedAt,rev:agenda.rev};
     return;
   }
-  const primeiraVez=(S.lastRev===undefined||S.lastRev===null);
-  if(!canEdit()||primeiraVez){
-    // espelho fiel: a agenda oficial é a mesma pra todo mundo
-    S.days=agenda.days;S.ideas=agenda.ideas;S.del=[];
-  }else{
-    let d2=mergeDays(agenda.days,S.days);
-    (S.del||[]).forEach(k=>delete d2[k]);
-    S.days=d2;
-    S.ideas=mergeIdeas(agenda.ideas,S.ideas);
-  }
+  // União com o remoto — nunca sobrescreve dado local que ainda não subiu.
+  let d2=mergeDays(agenda.days,S.days);
+  (S.del||[]).forEach(k=>delete d2[k]);
+  S.days=d2;
+  S.ideas=mergeIdeas(agenda.ideas,S.ideas);
   S.lastRev=agenda.rev;save();
-  syncInfo={state:canEdit()?'✅ sincronizado':'👁 modo leitura · atualizado',at:agenda.updatedAt,rev:agenda.rev};
+  syncInfo={state:'✅ sincronizado',at:agenda.updatedAt,rev:agenda.rev};
 }
 async function syncNow(){
   const got=await fetchAgenda();
@@ -1000,9 +1012,8 @@ async function syncNow(){
   stats();renderAlert();renderSyncBar();
 }
 let pubTimer=null;
-function publicar(){if(!canEdit())return;clearTimeout(pubTimer);pubTimer=setTimeout(doPublish,800);}
+function publicar(){clearTimeout(pubTimer);pubTimer=setTimeout(doPublish,800);}
 async function doPublish(retry){
-  if(!canEdit())return;
   syncInfo.state='publicando…';renderSyncBar();
   const got=await fetchAgenda();
   const base=(got&&got.agenda.rev>=1)?got.agenda:{days:{},ideas:[],rev:got?got.agenda.rev:0};
@@ -1010,20 +1021,18 @@ async function doPublish(retry){
   (S.del||[]).forEach(k=>delete days[k]);
   const ideas=mergeIdeas(base.ideas,S.ideas);
   const rev=(base.rev||0)+1;
-  const body={message:`agenda: rev ${rev} por ${S.user||'?'}`,
-    content:btoa(unescape(encodeURIComponent(JSON.stringify({days,ideas,rev,updatedAt:new Date().toISOString(),by:S.user||null},null,1)))),
-    ...(got&&got.sha?{sha:got.sha}:{})};
+  const data={days,ideas,rev,updatedAt:new Date().toISOString(),by:S.user||null};
   try{
-    const r=await fetch(REPO_API,{method:'PUT',
-      headers:{Authorization:'Bearer '+S.key,Accept:'application/vnd.github+json','Content-Type':'application/json'},
-      body:JSON.stringify(body)});
+    const r=await fetch(AGENDA_ENDPOINT,{method:'POST',
+      headers:{...supaHeaders(),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({id:1,data})});
     if(r.status===409&&!retry)return doPublish(true);
     if(!r.ok)throw new Error('HTTP '+r.status);
     S.days=days;S.ideas=ideas;S.del=[];S.lastRev=rev;save();
-    syncInfo={state:'✅ sincronizado',at:new Date().toISOString(),rev};
+    syncInfo={state:'✅ sincronizado',at:data.updatedAt,rev};
   }catch(e){
     syncInfo.state='⚠️ falha ao publicar — mudanças guardadas neste aparelho';
-    if(/401|403|404/.test(String(e)))alert('Não consegui publicar: a chave de edição parece inválida ou sem permissão. Confira em 🔑.');
+    if(/401|403|404/.test(String(e)))alert('Não consegui publicar. Confira se SUPA_URL e SUPA_KEY estão corretos e se as permissões (RLS) da tabela permitem escrita.');
   }
   renderSyncBar();
   if(view==='cal')renderCal();
@@ -1032,37 +1041,12 @@ async function doPublish(retry){
 const fmtHora=iso2=>{try{const d=new Date(iso2);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}catch(e){return''}};
 function syncBarHTML(){
   return `☁️ <b>Agenda oficial</b> · ${syncInfo.state}${syncInfo.at?` · ${fmtHora(syncInfo.at)}`:''}
-    <button class="wiz-skip" id="syncRefresh">🔄 atualizar</button>
-    <button class="wiz-skip" id="syncKey">${canEdit()?'🔑 edição ativa':'🔑 ativar edição'}</button>`;
+    <button class="wiz-skip" id="syncRefresh">🔄 atualizar</button>`;
 }
 function wireSyncBar(){
   const r=$('syncRefresh'); if(r)r.onclick=()=>{syncInfo.state='atualizando…';renderSyncBar();syncNow()};
-  const kb=$('syncKey'); if(kb)kb.onclick=keyModal;
 }
 function renderSyncBar(){const el=$('syncBar'); if(el){el.innerHTML=syncBarHTML();wireSyncBar();}}
-function keyModal(){
-  const scrim=document.createElement('div');scrim.className='scrim';
-  const md=document.createElement('div');md.className='idea-modal';
-  md.innerHTML=`<h3>🔑 Edição da agenda oficial</h3>
-    <p class="cats" style="color:var(--muted);font-size:13px;margin-bottom:10px">${canEdit()
-      ?'Este aparelho edita e publica a agenda oficial. Você pode trocar a chave ou desativar (vira modo leitura).'
-      :'Cole a chave de edição (o Philipe gera e manda só pra quem edita — Fabiano e PH). Sem chave, este aparelho fica em modo leitura, sempre espelhando a agenda oficial.'}</p>
-    <textarea id="keyTxt" placeholder="github_pat_…" style="min-height:70px">${esc(S.key||'')}</textarea>
-    <div class="actions"><button class="act draw" id="keySave">Salvar</button>${S.key?'<button class="act" id="keyOff" style="flex:.7">Desativar</button>':''}<button class="act" id="keyClose" style="flex:.5">Fechar</button></div>`;
-  const close=()=>{scrim.remove();md.remove()};
-  scrim.onclick=close;document.body.append(scrim,md);
-  md.querySelector('#keyClose').onclick=close;
-  md.querySelector('#keySave').onclick=()=>{
-    const v=md.querySelector('#keyTxt').value.trim();
-    if(!v){alert('Cole a chave.');return}
-    S.key=v;save();close();updateEditUI();
-    syncNow().then(()=>{if(syncInfo.rev<1&&(Object.keys(S.days).length||S.ideas.length))publicar()});};
-  const off=md.querySelector('#keyOff'); if(off)off.onclick=()=>{delete S.key;save();close();updateEditUI();syncNow();};
-}
-function updateEditUI(){
-  const f=document.querySelector('.idea-fab'); if(f)f.style.display=canEdit()?'':'none';
-  if(view==='cal')renderCal();
-}
 // Acesso ao Drive: usa o link oficial (DRIVE_URL) ou o configurado neste aparelho (S.drive)
 const driveUrl=()=>DRIVE_URL||S.drive||'';
 $('btnDrive').onclick=()=>{
@@ -1090,7 +1074,7 @@ function renderAlert(){
   const first=pend.find(p=>p.hoje)||pend[0];
   const label=pend.map(p=>`${p.hoje?'Hoje':p.dia} (${PILARES[p.a.p].n})`).join(' · ');
   el.innerHTML=`<div class="alertbar"><div class="tx">🎬 <b>Pra gravar:</b> ${esc(label)}</div>
-    <button class="act draw" id="alertGo" style="flex:0 0 auto;padding:10px 14px;font-size:12px">${canEdit()?'Escolher e gravar':'Ver o dia'}</button></div>`;
+    <button class="act draw" id="alertGo" style="flex:0 0 auto;padding:10px 14px;font-size:12px">Escolher e gravar</button></div>`;
   $('alertGo').onclick=()=>dayPanel(first.k,'rec');
 }
 $('btnDraw').onclick=draw;
@@ -1107,15 +1091,37 @@ cardEl.onclick=()=>{if(cur<0)return;
 cardEl.onkeydown=e=>{if(e.key==='Enter')cardEl.onclick()};
 
 // Perfis
-function pickUser(force){
-  if(S.user&&!force){$('userChip').textContent='👤 '+S.user;return}
+// Tela de login: 3 contas fixas — sem senha não entra, e não existe cadastro
+function loginScreen(){
+  if(document.querySelector('.profile-overlay'))return;
   const o=document.createElement('div');o.className='profile-overlay';
-  o.innerHTML=`<h2>Quem está aí?</h2><p>Escolha seu perfil — tudo que você criar fica assinado por você.</p>
-    ${USERS.map(u=>`<button class="pbtn" data-u="${u}">${u}</button>`).join('')}`;
-  o.querySelectorAll('.pbtn').forEach(b=>b.onclick=()=>{S.user=b.dataset.u;save();$('userChip').textContent='👤 '+S.user;o.remove()});
+  let nome=null;
+  const paint=()=>{
+    o.innerHTML=`<h2>Ignição · PH</h2><p>${nome?`Senha de <b>${nome}</b>:`:'Quem está aí? Só o time entra.'}</p>
+      ${nome?`<input type="password" id="lgSenha" class="tema-sel" style="max-width:340px;text-align:center;font-size:18px" autocomplete="current-password">
+        <div id="lgErro" style="color:#fb7185;font-size:13px;min-height:18px;text-align:center;max-width:340px"></div>
+        <button class="pbtn" id="lgEntrar">Entrar</button>
+        <button class="wiz-skip" id="lgVoltar">← trocar usuário</button>`
+      :Object.keys(CONTAS).map(n=>`<button class="pbtn" data-n="${n}">${n}</button>`).join('')}`;
+    o.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{nome=b.dataset.n;paint();const i=o.querySelector('#lgSenha');if(i)i.focus()});
+    const vt=o.querySelector('#lgVoltar'); if(vt)vt.onclick=()=>{nome=null;paint()};
+    const et=o.querySelector('#lgEntrar'), inp=o.querySelector('#lgSenha');
+    const go=async()=>{
+      const err=o.querySelector('#lgErro');err.textContent='';et.textContent='Entrando…';
+      try{
+        await authLogin(nome,inp.value);
+        o.remove();
+        $('userChip').textContent='👤 '+S.user;
+        renderAlert();syncNow();
+      }catch(e){et.textContent='Entrar';err.textContent=e.message||'Não deu — tente de novo.'}
+    };
+    if(et)et.onclick=go;
+    if(inp)inp.onkeydown=e=>{if(e.key==='Enter')go()};
+  };
+  paint();
   document.body.appendChild(o);
 }
-$('userChip').onclick=()=>pickUser(true);
+$('userChip').onclick=()=>{if(S.auth){if(confirm(`Sair da conta de ${S.user}?`))authLogout()}else loginScreen()};
 
 // Ideias do time
 const fab=document.createElement('button');fab.className='idea-fab';fab.textContent='+ Ideia';
@@ -1139,7 +1145,7 @@ fab.onclick=()=>{
   };
 };
 document.body.appendChild(fab);
-fab.style.display=canEdit()?'':'none';
+fab.style.display='';
 
 const arrow=$('chipArrow');
 arrow.onclick=()=>chipsEl.scrollBy({left:200});
@@ -1158,7 +1164,11 @@ addEventListener('storage',e=>{if(e.key===K)reloadState(e.newValue)});
 addEventListener('pageshow',e=>{if(e.persisted)reloadState()});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncNow()});
-renderChips();draw();arrowCheck();pickUser(false);renderAlert();syncNow();
+renderChips();draw();arrowCheck();renderAlert();
+if(S.auth){
+  $('userChip').textContent='👤 '+(S.user||'');
+  authRefresh().then(ok=>{if(ok)syncNow();else loginScreen()});
+}else loginScreen();
 // Semana ativa? Abre direto na agenda — é o que o time vem consultar
 (()=>{const now=new Date(),dow=now.getDay()||7,mon=new Date(now);mon.setDate(now.getDate()-(dow-1));
   for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);
